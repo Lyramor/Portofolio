@@ -38,7 +38,7 @@ body {
   -webkit-text-fill-color: transparent;
 }
 .headline-1 {
-  @apply text-5xl leading-tight font-semibold lg:text-[70px] lg:leading-[1.15]
+  @apply text-3xl leading-tight font-semibold lg:text-[60px] lg:leading-[1.15]
 }
 
 .headline-2 {
@@ -123,8 +123,80 @@ body {
   @apply h-11 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-800
 }
 
-/* Hero */
+/* Experience Section */
+.experience-container {
+  @apply px-4 mx-auto max-w-3xl lg:max-w-[1000px] w-full;
+}
 
+.experience-card {
+  @apply py-10 border-b border-zinc-700/50 last:border-b-0;
+}
+
+.tech-badge {
+  @apply px-3 py-1 text-sm font-medium rounded-lg bg-zinc-800 text-zinc-300 hover:bg-sky-400 hover:text-zinc-900 transition-colors;
+}
+
+/*__________________________*/
+/* Project Section */
+/*__________________________*/
+
+.project-container {
+  @apply px-4 mx-auto max-w-3xl lg:max-w-[1200px] w-full;
+}
+
+.project-card {
+  @apply flex flex-col h-full transform transition-all duration-300 hover:-translate-y-2;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.project-card .img-box {
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card .img-box::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30%;
+  background: linear-gradient(to top, rgba(10, 10, 10, 0.8), transparent);
+  z-index: 1;
+}
+
+/* Animation untuk counter */
+.counter-item {
+  @apply transition-all duration-500;
+}
+
+.counter-item:hover {
+  @apply transform -translate-y-1;
+}
+
+.count-number {
+  @apply transition-all duration-300;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.counter-item:hover .count-number {
+  @apply text-sky-400;
+}
+
+/* Responsive tweaks untuk project section */
+@media (max-width: 768px) {
+  .project-card .img-box {
+    @apply h-40;
+  }
+  
+  .project-card .content {
+    @apply p-4;
+  }
+  
+  .project-card h3 {
+    @apply text-lg;
+  }
+}
 
 @layer utilities {
   .text-balance {
