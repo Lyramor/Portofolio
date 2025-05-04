@@ -198,6 +198,112 @@ body {
   }
 }
 
+/*__________________________*/
+/* Contact Section */
+/*__________________________*/
+
+/* Section title style */
+.section-title {
+  @apply text-2xl md:text-3xl font-bold text-zinc-50 mb-2 relative;
+}
+
+/* Form container */
+.contact-form-container {
+  @apply bg-zinc-800/50 p-7 rounded-2xl md:p-12 max-w-3xl w-full shadow-lg border border-zinc-700/30;
+}
+
+/* Form inputs and textareas */
+.form-input,
+.form-textarea {
+  @apply w-full p-3 bg-zinc-900/60 rounded-lg border border-zinc-700 text-zinc-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 transition duration-300;
+}
+
+.form-input.error,
+.form-textarea.error {
+  @apply border-red-500;
+}
+
+/* Form labels */
+.form-label {
+  @apply block text-zinc-300 mb-2 flex items-center;
+}
+
+.form-label .icon {
+  @apply mr-2 text-sky-400;
+}
+
+/* Error messages */
+.error-message {
+  @apply mt-1 text-red-400 text-sm;
+}
+
+/* Form status messages */
+.form-status {
+  @apply mb-6 p-4 rounded-lg;
+}
+
+.form-status.success {
+  @apply bg-green-900/50 text-green-300 border border-green-700/50;
+}
+
+.form-status.error {
+  @apply bg-red-900/50 text-red-300 border border-red-700/50;
+}
+
+.form-status .icon {
+  @apply text-xl mr-3;
+}
+
+.form-status .icon.success {
+  @apply text-green-400;
+}
+
+.form-status .icon.error {
+  @apply text-red-400;
+}
+
+/* Submit button */
+.submit-button {
+  @apply w-full md:w-auto px-8 py-3 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-lg transition duration-300 disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden;
+}
+
+.submit-button .button-text {
+  @apply relative z-10 flex items-center justify-center;
+}
+
+.submit-button .button-icon {
+  @apply mr-2 group-hover:translate-x-1 transition-transform duration-300;
+}
+
+.submit-button .button-background {
+  @apply absolute inset-0 bg-sky-500 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300;
+}
+
+/* Animation utilities for contact section */
+.fade-in {
+  @apply opacity-0 transition-opacity duration-500;
+}
+
+.fade-in.visible {
+  @apply opacity-100;
+}
+
+.slide-up {
+  @apply transform translate-y-6 opacity-0 transition-all duration-500;
+}
+
+.slide-up.visible {
+  @apply translate-y-0 opacity-100;
+}
+
+.stagger-item {
+  @apply opacity-0 transform translate-y-4 transition-all duration-300;
+}
+
+.stagger-item.visible {
+  @apply opacity-100 translate-y-0;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

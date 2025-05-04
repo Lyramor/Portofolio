@@ -22,7 +22,7 @@ export default function Header() {
         <h1>
           <Link href="/" className="logo">
             <Image 
-              src="/images/Logo.png" // <-- pakai path langsung dari public/
+              src="/images/Logo.png"
               width={120}
               height={90}
               alt="Cylia Tech"

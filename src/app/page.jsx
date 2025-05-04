@@ -9,7 +9,8 @@ import About from '@/components/About';
 import Skill from '@/components/Skill';
 import Experience from '@/components/Experience';
 import Project from '@/components/Project';
-import SplashCursor from '@/components/SplashCursor/SplashCursor';
+import Contact from '@/components/Contact';
+import Footer from '@/components/Footer'
 
 export default function HomePage() {
   return (
@@ -21,6 +22,8 @@ export default function HomePage() {
         <Skill/>
         <Experience/>
         <Project/>
+        <Contact/>
+        <Footer />
       </main>
     </div>
   );
