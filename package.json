@@ -2,11 +2,13 @@
   "name": "cylia_tech",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init": "node src/lib/init.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -17,15 +19,25 @@
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
     "@react-three/rapier": "^1.5.0",
+    "bcryptjs": "^3.0.2",
     "framer-motion": "^11.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.509.0",
     "meshline": "^3.3.1",
+    "mysql2": "^3.14.1",
     "next": "^14.2.28",
+    "next-auth": "^4.24.11",
     "nodemailer": "^6.10.1",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^5.5.0",
     "react-intersection-observer": "^9.16.0",
     "three": "^0.167.1",
+    "uuid": "^11.1.0",
     "zod": "^3.24.3"
   },
   "devDependencies": {

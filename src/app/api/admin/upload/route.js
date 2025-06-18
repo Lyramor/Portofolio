@@ -1,0 +1,72 @@
+// File: /app/api/admin/upload/route.js (Next.js App Router API)
+import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid'; // Pastikan untuk menginstal uuid dengan npm
+import { mkdir } from 'fs/promises';
+
+export async function POST(request) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('image');
+    
+    if (!file) {
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
+
+    // Get file data
+    const buffer = Buffer.from(await file.arrayBuffer());
+    
+    // Get file type and generate unique name
+    const originalName = file.name;
+    let fileName = `${uuidv4()}`;
+    
+    // Handle file extensions properly, especially for SVG
+    const fileType = file.type;
+    let fileExtension;
+    
+    // Fix for SVG files specifically
+    if (fileType === 'image/svg+xml') {
+      fileExtension = '.svg'; // Always use .svg, not .svg+xml
+    } else {
+      // For other file types, get extension from original name or mime type
+      fileExtension = path.extname(originalName);
+      if (!fileExtension) {
+        // Fallback to mime type if no extension in original name
+        fileExtension = `.${fileType.split('/')[1]}`;
+      }
+    }
+    
+    // Final filename with correct extension
+    fileName = fileName + fileExtension;
+    
+    // Ensure upload directory exists - now specifically for skills
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'skills');
+    try {
+      await mkdir(uploadDir, { recursive: true });
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
+    }
+    
+    // File path with correct extension
+    const filePath = path.join(uploadDir, fileName);
+    
+    // Write file to disk
+    fs.writeFileSync(filePath, buffer);
+    
+    // Generate URL for the uploaded file - path that will be saved in database
+    const imageUrl = `/uploads/skills/${fileName}`;
+    
+    // Log success for debugging
+    console.log(`File successfully uploaded to: ${filePath}`);
+    console.log(`Image URL saved in database will be: ${imageUrl}`);
+    
+    return NextResponse.json({ 
+      success: true, 
+      imageUrl: imageUrl
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json({ error: 'File upload failed' }, { status: 500 });
+  }
+}

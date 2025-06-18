@@ -10,11 +10,13 @@ import Skill from '@/components/Skill';
 import Experience from '@/components/Experience';
 import Project from '@/components/Project';
 import Contact from '@/components/Contact';
-import Footer from '@/components/Footer'
+import Footer from '@/components/Footer';
+import SplashCursor from '@/components/SplashCursor/SplashCursor';
 
 export default function HomePage() {
   return (
     <div className="relative overflow-hidden">
+      <SplashCursor/>
       <Header />
       <main>
         <Hero/>

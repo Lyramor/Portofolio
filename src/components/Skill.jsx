@@ -96,6 +96,16 @@ const skillItem = [
     imgSrc: '/images/skill/postman-api.svg',
     label: 'Postman',
     desc: 'API Testing'
+  },
+  {
+    imgSrc: '/images/skill/vs-code.svg',
+    label: 'VS Code',
+    desc: 'Code Editor'
+  },
+  {
+    imgSrc: '/images/skill/unity.svg',
+    label: 'Unity',
+    desc: 'Game Engine'
   }
 ];
 
