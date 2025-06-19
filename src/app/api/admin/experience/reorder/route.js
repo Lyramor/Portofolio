@@ -6,7 +6,6 @@ import { getSessionUser } from '@/lib/auth';
 
 export async function POST(request) {
   try {
-    // Authenticate user
     const cookieStore = cookies();
     const user = await getSessionUser(cookieStore);
     
@@ -20,12 +19,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid experience IDs' }, { status: 400 });
     }
     
-    // First, add display_order column if it doesn't exist
     await query(`
       ALTER TABLE experience ADD COLUMN IF NOT EXISTS display_order INT DEFAULT NULL
     `);
     
-    // Update the display order for each experience
     for (let i = 0; i < experienceIds.length; i++) {
       await query(
         'UPDATE experience SET display_order = ? WHERE id = ?',

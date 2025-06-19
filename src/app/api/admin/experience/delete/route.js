@@ -1,7 +1,11 @@
 // src/app/api/admin/experience/delete/route.js
+import { query } from '@/lib/db';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { getSessionUser } from '@/lib/auth';
+
 export async function DELETE(request) {
   try {
-    // Authenticate user
     const cookieStore = cookies();
     const user = await getSessionUser(cookieStore);
     
@@ -16,14 +20,12 @@ export async function DELETE(request) {
       return NextResponse.json({ error: 'Experience ID is required' }, { status: 400 });
     }
     
-    // Check if the experience exists
     const existingExp = await query('SELECT id FROM experience WHERE id = ?', [id]);
     
     if (existingExp.length === 0) {
       return NextResponse.json({ error: 'Experience not found' }, { status: 404 });
     }
     
-    // Delete the experience
     await query('DELETE FROM experience WHERE id = ?', [id]);
     
     return NextResponse.json({ success: true });

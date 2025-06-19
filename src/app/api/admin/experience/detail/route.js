@@ -6,7 +6,6 @@ import { getSessionUser } from '@/lib/auth';
 
 export async function GET(request) {
   try {
-    // Authenticate user
     const cookieStore = cookies();
     const user = await getSessionUser(cookieStore);
     
@@ -14,7 +13,6 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Get id from URL search params
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     
@@ -24,7 +22,7 @@ export async function GET(request) {
     
     const experiences = await query(`
       SELECT e.id, e.period, e.position, e.company, e.description, 
-      GROUP_CONCAT(s.label SEPARATOR ', ') as technologies
+      GROUP_CONCAT(s.id) as skill_ids_raw 
       FROM experience e
       LEFT JOIN experience_skills es ON e.id = es.experience_id
       LEFT JOIN skills s ON es.skill_id = s.id
@@ -36,16 +34,21 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Experience not found' }, { status: 404 });
     }
     
-    return NextResponse.json(experiences[0]);
+    const experienceData = experiences[0];
+    const formattedSkillIds = experienceData.skill_ids_raw ? experienceData.skill_ids_raw.split(',').map(sId => parseInt(sId)) : [];
+
+    return NextResponse.json({
+      ...experienceData,
+      skill_ids: formattedSkillIds 
+    });
   } catch (error) {
-    console.error('Error fetching experience:', error);
+    console.error('Error fetching experience detail:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function PUT(request) {
   try {
-    // Authenticate user
     const cookieStore = cookies();
     const user = await getSessionUser(cookieStore);
     
@@ -53,25 +56,22 @@ export async function PUT(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, period, position, company, description, technologies } = await request.json();
+    const { id, period, position, company, description, skillIds } = await request.json(); 
     
     if (!id) {
       return NextResponse.json({ error: 'Experience ID is required' }, { status: 400 });
     }
     
-    // Validate required fields
     if (!period || !position || !company) {
-      return NextResponse.json({ error: 'Period, position, and company are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Period, position, and company are required.' }, { status: 400 });
     }
     
-    // Check if the experience exists
     const existingExp = await query('SELECT id FROM experience WHERE id = ?', [id]);
     
     if (existingExp.length === 0) {
       return NextResponse.json({ error: 'Experience not found' }, { status: 404 });
     }
     
-    // Update the experience
     await query(
       `UPDATE experience 
        SET period = ?, position = ?, company = ?, description = ?, updated_at = CURRENT_TIMESTAMP
@@ -79,30 +79,10 @@ export async function PUT(request) {
       [period, position, company, description || null, id]
     );
     
-    // Remove existing skill associations
     await query('DELETE FROM experience_skills WHERE experience_id = ?', [id]);
     
-    // Add new skill associations if technologies are provided
-    if (technologies) {
-      const techArray = technologies.split(',').map(tech => tech.trim());
-      
-      for (const tech of techArray) {
-        // Check if the skill exists
-        let skillQuery = await query('SELECT id FROM skills WHERE label = ?', [tech]);
-        let skillId;
-        
-        if (skillQuery.length === 0) {
-          // Create the skill if it doesn't exist
-          const skillResult = await query(
-            'INSERT INTO skills (label, imgSrc) VALUES (?, ?)',
-            [tech, '/images/skills/default.svg']
-          );
-          skillId = skillResult.insertId;
-        } else {
-          skillId = skillQuery[0].id;
-        }
-        
-        // Associate the skill with the experience
+    if (skillIds && skillIds.length > 0) {
+      for (const skillId of skillIds) {
         await query(
           'INSERT INTO experience_skills (experience_id, skill_id) VALUES (?, ?)',
           [id, skillId]
@@ -116,7 +96,7 @@ export async function PUT(request) {
       position,
       company,
       description,
-      technologies
+      skillIds 
     });
   } catch (error) {
     console.error('Error updating experience:', error);

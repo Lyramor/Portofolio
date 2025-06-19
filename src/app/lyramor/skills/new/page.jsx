@@ -1,30 +1,28 @@
 'use client';
-// src/app/lyramor/projects/new/page.jsx
-
+// src/app/lyramor/skills/new/edit/page.jsx
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  FiBriefcase, 
+  FiCode, 
   FiSave, 
   FiX, 
   FiLoader,
   FiAlertCircle,
   FiUpload,
-  FiImage,
-  FiTag
+  FiTrash2
 } from 'react-icons/fi';
-import SkillsSelector from '@/components/admin/SkillsSelector';
 
-export default function NewProjectPage() {
+export default function NewSkillPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    title: '',
+    label: '',
     description: '',
+    imgSrc: '', // Untuk URL gambar
   });
-  const [selectedSkills, setSelectedSkills] = useState([]);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null); // Untuk file gambar yang diunggah
+  const [imagePreview, setImagePreview] = useState(null); // Untuk pratinjau gambar
+  const [uploadOption, setUploadOption] = useState('url'); // 'url' atau 'upload'
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -36,29 +34,37 @@ export default function NewProjectPage() {
     }));
   };
 
-  const handleSkillsChange = (skills) => {
-    setSelectedSkills(skills);
-  };
-
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    // Check file type
-    if (!file.type.includes('image/')) {
-      setError('Please select an image file');
+    if (!file) {
+      if (!imageFile) { 
+        setImageFile(null);
+        setImagePreview(null);
+      }
       return;
     }
 
-    // Check file size (max 2MB)
+    setError(null); // Reset error saat file baru dipilih
+
+    // Periksa tipe file
+    if (!file.type.includes('image/')) {
+      setError('Harap pilih file gambar (JPG, PNG, SVG, dll.).');
+      setImageFile(null);
+      setImagePreview(null);
+      return;
+    }
+
+    // Periksa ukuran file (maks 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      setError('Image size should be less than 2MB');
+      setError('Ukuran gambar harus kurang dari 2MB.');
+      setImageFile(null);
+      setImagePreview(null);
       return;
     }
 
     setImageFile(file);
     
-    // Create preview
+    // Buat pratinjau gambar
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target.result);
@@ -66,46 +72,82 @@ export default function NewProjectPage() {
     reader.readAsDataURL(file);
   };
 
+  const handleClearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setError(null); 
+  };
+
+  const handleUploadOptionChange = (option) => {
+    setUploadOption(option);
+    setImageFile(null); // Reset file saat opsi berubah
+    setImagePreview(null); // Reset pratinjau saat opsi berubah
+    setFormData(prev => ({ ...prev, imgSrc: '' })); // Reset URL saat opsi berubah
+    setError(null); // Reset error
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
     setSaving(true);
+    setError(null);
 
-    // Basic validation
-    if (!formData.title.trim()) {
-      setError('Project title is required');
+    // Validasi dasar
+    if (!formData.label.trim()) {
+      setError('Nama skill wajib diisi.');
       setSaving(false);
       return;
     }
 
     try {
-      const formDataToSubmit = new FormData();
-      formDataToSubmit.append('title', formData.title);
-      formDataToSubmit.append('description', formData.description);
-      
-      // Add skills as JSON string
-      formDataToSubmit.append('skills', JSON.stringify(selectedSkills));
-      
-      // Add image if selected
-      if (imageFile) {
-        formDataToSubmit.append('image', imageFile);
+      let finalImgSrc = formData.imgSrc; // Default ke URL jika opsi 'url'
+
+      // Jika opsi upload file dan ada file yang dipilih
+      if (uploadOption === 'upload' && imageFile) {
+        const imageFormData = new FormData();
+        imageFormData.append('image', imageFile);
+
+        // Upload gambar ke API upload
+        const uploadRes = await fetch('/api/admin/upload', { // Menggunakan API upload yang sudah ada
+          method: 'POST',
+          body: imageFormData,
+        });
+
+        if (!uploadRes.ok) {
+          const errorData = await uploadRes.json();
+          throw new Error(errorData.error || 'Gagal mengunggah gambar.');
+        }
+
+        const imageData = await uploadRes.json();
+        finalImgSrc = imageData.imageUrl; // Dapatkan URL gambar yang diunggah
+      } else if (uploadOption === 'upload' && !imageFile) {
+        // Jika opsi upload tapi tidak ada file, set imgSrc menjadi null atau string kosong
+        finalImgSrc = null;
       }
 
-      const res = await fetch('/api/admin/projects', {
+      // Kirim data skill ke API
+      const res = await fetch('/api/admin/skills', { // Menggunakan API skill untuk membuat skill baru
         method: 'POST',
-        body: formDataToSubmit,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          label: formData.label,
+          description: formData.description,
+          imgSrc: finalImgSrc, // Gunakan URL gambar yang sudah diunggah/dimasukkan
+        }),
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to create project');
+        throw new Error(errorData.error || 'Gagal membuat skill baru.');
       }
 
-      // Redirect back to projects list after successful creation
-      router.push('/lyramor/projects');
+      // Redirect ke halaman daftar skill setelah berhasil
+      router.push('/lyramor/skills');
+      router.refresh(); // Opsional: refresh data di halaman tujuan
     } catch (err) {
-      console.error('Error creating project:', err);
-      setError(err.message || 'Failed to create project. Please try again.');
+      console.error('Error creating skill:', err);
+      setError(err.message || 'Gagal membuat skill. Silakan coba lagi.');
     } finally {
       setSaving(false);
     }
@@ -114,8 +156,8 @@ export default function NewProjectPage() {
   return (
     <div>
       <div className="mb-6 flex items-center">
-        <FiBriefcase className="text-sky-400 mr-3" size={24} />
-        <h1 className="text-2xl font-bold">Add New Project</h1>
+        <FiCode className="text-sky-400 mr-3" size={24} />
+        <h1 className="text-2xl font-bold">Tambah Skill Baru</h1>
       </div>
 
       {error && (
@@ -128,24 +170,126 @@ export default function NewProjectPage() {
       <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
-            <label htmlFor="title" className="block text-sm font-medium text-zinc-300 mb-2">
-              Project Title *
+            <label htmlFor="label" className="block text-sm font-medium text-zinc-300 mb-2">
+              Nama Skill *
             </label>
             <input
               type="text"
-              id="title"
-              name="title"
-              value={formData.title}
+              id="label"
+              name="label"
+              value={formData.label}
               onChange={handleChange}
               className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              placeholder="e.g., Portfolio Website, E-commerce App"
+              placeholder="Contoh: React, JavaScript, UI Design"
               required
             />
           </div>
 
           <div className="mb-6">
+            <div className="flex mb-4">
+              <button
+                type="button"
+                onClick={() => handleUploadOptionChange('url')}
+                className={`flex-1 py-2 ${uploadOption === 'url' 
+                  ? 'bg-sky-600 text-white' 
+                  : 'bg-zinc-700 text-zinc-300'} rounded-l-lg transition-colors`}
+              >
+                URL Gambar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleUploadOptionChange('upload')}
+                className={`flex-1 py-2 ${uploadOption === 'upload' 
+                  ? 'bg-sky-600 text-white' 
+                  : 'bg-zinc-700 text-zinc-300'} rounded-r-lg transition-colors`}
+              >
+                Unggah Gambar
+              </button>
+            </div>
+
+            {uploadOption === 'url' ? (
+              <>
+                <label htmlFor="imgSrc" className="block text-sm font-medium text-zinc-300 mb-2">
+                  URL Gambar
+                </label>
+                <input
+                  type="text"
+                  id="imgSrc"
+                  name="imgSrc"
+                  value={formData.imgSrc}
+                  onChange={handleChange}
+                  className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  placeholder="https://example.com/icon.svg"
+                />
+                <p className="text-zinc-500 text-sm mt-2">
+                  Masukkan URL ikon atau logo skill (direkomendasikan SVG).
+                </p>
+                {formData.imgSrc && (
+                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center">
+                    <img 
+                      src={formData.imgSrc} 
+                      alt="Pratinjau URL Gambar" 
+                      className="max-h-24 object-contain" 
+                      onError={(e) => { 
+                        e.target.onerror = null; 
+                        e.target.src="/images/skills/default.svg"; // Fallback ke gambar default
+                        e.target.classList.add('p-4'); // Tambahkan padding jika fallback
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <label htmlFor="imageUpload" className="block text-sm font-medium text-zinc-300 mb-2">
+                  Unggah Gambar
+                </label>
+                <div className="mt-1 flex items-center">
+                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative">
+                    {imagePreview ? (
+                      <div className="w-full flex flex-col items-center">
+                        <img 
+                          src={imagePreview} 
+                          alt="Pratinjau Unggahan" 
+                          className="h-32 object-contain mb-4" 
+                        />
+                        <span className="text-sm">Klik untuk mengubah gambar</span>
+                      </div>
+                    ) : (
+                      <>
+                        <FiUpload className="w-8 h-8" />
+                        <span className="mt-2 text-base">Pilih gambar</span>
+                      </>
+                    )}
+                    <input 
+                      id="imageUpload" 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                    {imagePreview && (
+                      <button
+                        type="button"
+                        onClick={handleClearImage}
+                        className="absolute top-2 right-2 p-2 bg-red-600/70 text-white rounded-full hover:bg-red-700/70 transition-colors"
+                        title="Hapus Gambar"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
+                    )}
+                  </label>
+                </div>
+                <p className="text-zinc-500 text-sm mt-2">
+                  Ukuran file maksimal: 2MB. Format yang direkomendasikan: SVG, PNG, JPEG.
+                </p>
+              </>
+            )}
+          </div>
+
+          <div className="mb-6">
             <label htmlFor="description" className="block text-sm font-medium text-zinc-300 mb-2">
-              Description
+              Deskripsi
             </label>
             <textarea
               id="description"
@@ -154,63 +298,17 @@ export default function NewProjectPage() {
               onChange={handleChange}
               rows="4"
               className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              placeholder="Brief description of your project"
-            />
-          </div>
-
-          <div className="mb-6">
-            <label htmlFor="imageUpload" className="block text-sm font-medium text-zinc-300 mb-2">
-              Project Image
-            </label>
-            <div className="mt-1 flex items-center">
-              <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors">
-                {imagePreview ? (
-                  <div className="w-full flex flex-col items-center">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      className="h-32 object-contain mb-4" 
-                    />
-                    <span className="text-sm">Click to change image</span>
-                  </div>
-                ) : (
-                  <>
-                    <FiUpload className="w-8 h-8" />
-                    <span className="mt-2 text-base">Select an image</span>
-                  </>
-                )}
-                <input 
-                  id="imageUpload" 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-              </label>
-            </div>
-            <p className="text-zinc-500 text-sm mt-2">
-              Max file size: 2MB. Recommended formats: PNG, JPEG
-            </p>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-zinc-300 mb-2 flex items-center">
-              <FiTag className="mr-2" size={16} />
-              Skills Used
-            </label>
-            <SkillsSelector 
-              selectedSkills={selectedSkills} 
-              onChange={handleSkillsChange} 
+              placeholder="Deskripsi singkat tentang skill ini"
             />
           </div>
 
           <div className="flex justify-end gap-4 mt-8">
             <Link
-              href="/lyramor/projects"
+              href="/lyramor/skills"
               className="px-4 py-2 border border-zinc-600 rounded-lg hover:bg-zinc-700 transition-colors flex items-center gap-2"
             >
               <FiX size={18} />
-              <span>Cancel</span>
+              <span>Batal</span>
             </Link>
             
             <button
@@ -223,7 +321,7 @@ export default function NewProjectPage() {
               ) : (
                 <FiSave size={18} />
               )}
-              <span>Save Project</span>
+              <span>Simpan Skill</span>
             </button>
           </div>
         </form>

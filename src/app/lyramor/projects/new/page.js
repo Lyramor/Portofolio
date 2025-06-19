@@ -1,341 +1,278 @@
 'use client';
 // src/app/lyramor/projects/new/page.js
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiSave, FiX, FiImage, FiLink, FiUpload } from 'react-icons/fi';
+import Link from 'next/link';
+import { 
+  FiBriefcase, 
+  FiSave, 
+  FiX, 
+  FiLoader,
+  FiAlertCircle,
+  FiUpload,
+  FiImage,
+  FiTag,
+  FiTrash2, // Untuk tombol hapus gambar
+  FiLink // Untuk ikon link
+} from 'react-icons/fi';
+import SkillsSelector from '@/components/admin/SkillsSelector';
 
 export default function NewProjectPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    image: null,
-    imageUrl: '',
-    imageType: 'upload', // 'upload' or 'url'
-    selectedSkills: []
+    link: '', // Tambahkan state untuk link
   });
-  const [loading, setLoading] = useState(false);
-  const [skills, setSkills] = useState([]);
-  const [previewUrl, setPreviewUrl] = useState('');
-
-  useEffect(() => {
-    fetchSkills();
-  }, []);
-
-  const fetchSkills = async () => {
-    try {
-      const res = await fetch('/api/admin/skills/list');
-      const data = await res.json();
-      setSkills(data);
-    } catch (error) {
-      console.error('Error fetching skills:', error);
-    }
-  };
+  const [selectedSkills, setSelectedSkills] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null); 
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleSkillChange = (e) => {
-    const skillId = parseInt(e.target.value);
-    if (e.target.checked) {
-      setFormData({
-        ...formData,
-        selectedSkills: [...formData.selectedSkills, skillId]
-      });
-    } else {
-      setFormData({
-        ...formData,
-        selectedSkills: formData.selectedSkills.filter(id => id !== skillId)
-      });
-    }
+  const handleSkillsChange = (skills) => {
+    setSelectedSkills(skills);
   };
 
-  const handleImageTypeChange = (type) => {
-    setFormData({
-      ...formData,
-      imageType: type,
-      // Reset image values when switching types
-      image: type === 'upload' ? formData.image : null,
-      imageUrl: type === 'url' ? formData.imageUrl : ''
-    });
-  };
-
-  const handleImageChange = (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setFormData({ ...formData, image: file });
-      // Create a preview URL for the image
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
-      
-      // Clean up the object URL when it's no longer needed
-      return () => URL.revokeObjectURL(objectUrl);
+    if (!file) {
+      if (!imageFile) { 
+        setImageFile(null);
+        setImagePreview(null);
+      }
+      return;
     }
+
+    setError(null); 
+
+    if (!file.type.includes('image/')) {
+      setError('Please select an image file (PNG, JPEG, GIF, SVG, etc.).');
+      setImageFile(null);
+      setImagePreview(null);
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image size should be less than 2MB.');
+      setImageFile(null);
+      setImagePreview(null);
+      return;
+    }
+
+    setImageFile(file);
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
   };
+
+  const handleClearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setError(null); 
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setError(null);
+    setSaving(true);
+
+    if (!formData.title.trim()) {
+      setError('Project title is required.');
+      setSaving(false);
+      return;
+    }
 
     try {
-      // Create form data for multipart/form-data submission
-      const submitData = new FormData();
-      submitData.append('title', formData.title);
-      submitData.append('description', formData.description);
+      const formDataToSubmit = new FormData();
+      formDataToSubmit.append('title', formData.title);
+      formDataToSubmit.append('description', formData.description);
+      formDataToSubmit.append('link', formData.link); // Kirim data link
       
-      if (formData.imageType === 'upload' && formData.image) {
-        submitData.append('image', formData.image);
-      } else if (formData.imageType === 'url' && formData.imageUrl) {
-        submitData.append('imageUrl', formData.imageUrl);
+      formDataToSubmit.append('skills', JSON.stringify(selectedSkills));
+      
+      if (imageFile) {
+        formDataToSubmit.append('image', imageFile);
       }
-      
-      // Append selected skills
-      formData.selectedSkills.forEach(skillId => {
-        submitData.append('skills[]', skillId);
-      });
 
-      const res = await fetch('/api/admin/project', {
+      const res = await fetch('/api/admin/projects', { 
         method: 'POST',
-        body: submitData,
-        // Don't set Content-Type header, let the browser set it with boundary for FormData
+        body: formDataToSubmit,
       });
 
-      if (res.ok) {
-        router.push('/lyramor/project');
-      } else {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed to create project');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to create project.');
       }
-    } catch (error) {
-      console.error('Error creating project:', error);
-      alert('Failed to create project: ' + error.message);
+
+      // Alihkan ke halaman skills setelah berhasil membuat proyek
+      router.push('/lyramor/skills'); 
+      router.refresh(); 
+    } catch (err) {
+      console.error('Error creating project:', err);
+      setError(err.message || 'Failed to create project. Please try again.');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-6 flex items-center">
+        <FiBriefcase className="text-sky-400 mr-3" size={24} />
         <h1 className="text-2xl font-bold">Add New Project</h1>
-        <button
-          onClick={() => router.push('/lyramor/projects')}
-          className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <FiX size={18} />
-          Cancel
-        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
-            {/* Title */}
-            <div>
-              <label htmlFor="title" className="block text-zinc-300 mb-2">
-                Project Title
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full bg-zinc-700 border border-zinc-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                required
-              />
-            </div>
+      {error && (
+        <div className="bg-red-500/20 text-red-400 p-4 rounded-lg mb-6 flex items-center">
+          <FiAlertCircle className="mr-2" size={18} />
+          {error}
+        </div>
+      )}
 
-            {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-zinc-300 mb-2">
-                Project Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="w-full bg-zinc-700 border border-zinc-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 h-40"
-                required
-              ></textarea>
-            </div>
+      <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
+        <form onSubmit={handleSubmit}>
+          <div className="mb-6">
+            <label htmlFor="title" className="block text-sm font-medium text-zinc-300 mb-2">
+              Project Title *
+            </label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              placeholder="e.g., Portfolio Website, E-commerce App"
+              required
+            />
+          </div>
 
-            {/* Image Type Toggle */}
-            <div>
-              <label className="block text-zinc-300 mb-3">Image Source</label>
-              <div className="flex space-x-4">
-                <button
-                  type="button"
-                  onClick={() => handleImageTypeChange('upload')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    formData.imageType === 'upload'
-                      ? 'bg-sky-600 text-white'
-                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
-                  }`}
-                >
-                  <FiUpload size={18} />
-                  Upload File
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleImageTypeChange('url')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    formData.imageType === 'url'
-                      ? 'bg-sky-600 text-white'
-                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
-                  }`}
-                >
-                  <FiLink size={18} />
-                  External URL
-                </button>
-              </div>
-            </div>
+          <div className="mb-6">
+            <label htmlFor="description" className="block text-sm font-medium text-zinc-300 mb-2">
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows="4"
+              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              placeholder="Brief description of your project"
+            />
+          </div>
 
-            {/* Image Upload */}
-            {formData.imageType === 'upload' && (
-              <div>
-                <label htmlFor="image" className="block text-zinc-300 mb-2">
-                  Project Image
-                </label>
-                <div className="border-2 border-dashed border-zinc-600 rounded-lg p-4 text-center">
-                  <input
-                    type="file"
-                    id="image"
-                    name="image"
-                    onChange={handleImageChange}
-                    className="hidden"
-                    accept="image/*"
-                  />
-                  <label
-                    htmlFor="image"
-                    className="cursor-pointer flex flex-col items-center justify-center py-6"
-                  >
-                    <FiImage size={48} className="text-zinc-400 mb-4" />
-                    <span className="text-zinc-300 font-medium mb-1">
-                      Click to upload image
-                    </span>
-                    <span className="text-zinc-500 text-sm">
-                      Supports: JPG, PNG, SVG, GIF, etc.
-                    </span>
-                  </label>
-                  {previewUrl && (
-                    <div className="mt-4">
-                      <img
-                        src={previewUrl}
-                        alt="Preview"
-                        className="max-h-40 mx-auto rounded-lg object-contain"
-                      />
-                      <p className="text-sm text-zinc-400 mt-2">
-                        {formData.image?.name}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+          {/* New field for Project Link */}
+          <div className="mb-6">
+            <label htmlFor="link" className="block text-sm font-medium text-zinc-300 mb-2 flex items-center">
+              <FiLink className="mr-2" size={16} />
+              Project Link
+            </label>
+            <input
+              type="url"
+              id="link"
+              name="link"
+              value={formData.link}
+              onChange={handleChange}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              placeholder="e.g., https://yourproject.com"
+            />
+            <p className="text-zinc-500 text-sm mt-2">Optional: URL to the live project or repository.</p>
+          </div>
 
-            {/* Image URL */}
-            {formData.imageType === 'url' && (
-              <div>
-                <label htmlFor="imageUrl" className="block text-zinc-300 mb-2">
-                  Image URL
-                </label>
-                <input
-                  type="url"
-                  id="imageUrl"
-                  name="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={handleChange}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full bg-zinc-700 border border-zinc-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-                {formData.imageUrl && (
-                  <div className="mt-4">
-                    <img
-                      src={formData.imageUrl}
-                      alt="URL Preview"
-                      className="max-h-40 mx-auto rounded-lg object-contain"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0yNCAyNGgtMjR2LTI0aDI0djI0em0tMTEtN2wtMi41LTIuNS0zLjUgNC41aDE0bC01LjUtNy4yLTIuNSAzLjJ6bS03LjUtOWMwIDEuMjcxIDEuMDczIDIuMjUgMi4zMjEgMi4yNSAxLjI0OCAwIDIuMzIxLS45NzkgMi4zMjEtMi4yNSAwLTEuMjgyLTEuMDczLTIuMjUtMi4zMjEtMi4yNS0xLjI0OCAwLTIuMzIxLjk2OC0yLjMyMSAyLjI1eiIvPjwvc3ZnPg==';
-                        e.target.classList.add('p-8');
-                      }}
+          <div className="mb-6">
+            <label htmlFor="imageUpload" className="block text-sm font-medium text-zinc-300 mb-2">
+              Project Image
+            </label>
+            <div className="mt-1 flex flex-col items-center">
+              <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative">
+                {imagePreview ? (
+                  <div className="w-full flex flex-col items-center">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="h-32 object-contain mb-4" 
                     />
+                    <span className="text-sm">Click to change image</span>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Right Column */}
-          <div>
-            {/* Skills */}
-            <div>
-              <label className="block text-zinc-300 mb-4">
-                Select Skills Used
-              </label>
-              <div className="bg-zinc-700 border border-zinc-600 rounded-lg p-4 max-h-96 overflow-y-auto">
-                {skills.length === 0 ? (
-                  <p className="text-zinc-400 text-center py-4">No skills found</p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {skills.map((skill) => (
-                      <div key={skill.id} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`skill-${skill.id}`}
-                          value={skill.id}
-                          checked={formData.selectedSkills.includes(skill.id)}
-                          onChange={handleSkillChange}
-                          className="w-4 h-4 rounded border-zinc-500 text-sky-600 focus:ring-sky-500 focus:ring-offset-zinc-800"
-                        />
-                        <label
-                          htmlFor={`skill-${skill.id}`}
-                          className="flex items-center gap-2 cursor-pointer py-1"
-                        >
-                          {skill.imgSrc && (
-                            <img
-                              src={skill.imgSrc}
-                              alt={skill.label}
-                              className="w-5 h-5 object-contain"
-                            />
-                          )}
-                          <span>{skill.label}</span>
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    <FiUpload className="w-8 h-8" />
+                    <span className="mt-2 text-base">Select an image</span>
+                  </>
                 )}
-              </div>
+                <input 
+                  id="imageUpload" 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+                {imagePreview && (
+                    <button
+                        type="button"
+                        onClick={handleClearImage}
+                        className="absolute top-2 right-2 p-2 bg-red-600/70 text-white rounded-full hover:bg-red-700/70 transition-colors"
+                        title="Clear Image"
+                    >
+                        <FiTrash2 size={16} />
+                    </button>
+                )}
+              </label>
             </div>
+            <p className="text-zinc-500 text-sm mt-2">
+              Max file size: 2MB. Recommended formats: PNG, JPEG, SVG, GIF.
+            </p>
           </div>
-        </div>
 
-        {/* Submit Button */}
-        <div className="mt-8 flex justify-end">
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg flex items-center gap-2 transition-colors disabled:bg-zinc-600 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                <span>Creating...</span>
-              </>
-            ) : (
-              <>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-zinc-300 mb-2 flex items-center">
+              <FiTag className="mr-2" size={16} />
+              Skills Used
+            </label>
+            <SkillsSelector 
+              selectedSkills={selectedSkills} 
+              onChange={handleSkillsChange} 
+            />
+          </div>
+
+          <div className="flex justify-end gap-4 mt-8">
+            <Link
+              href="/lyramor/projects"
+              className="px-4 py-2 border border-zinc-600 rounded-lg hover:bg-zinc-700 transition-colors flex items-center gap-2"
+            >
+              <FiX size={18} />
+              <span>Cancel</span>
+            </Link>
+            
+            <button
+              type="submit"
+              disabled={saving}
+              className="bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+            >
+              {saving ? (
+                <FiLoader className="animate-spin" size={18} />
+              ) : (
                 <FiSave size={18} />
-                <span>Save Project</span>
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+              )}
+              <span>Save Project</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

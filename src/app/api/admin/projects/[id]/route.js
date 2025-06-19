@@ -7,41 +7,38 @@ import fs from 'fs';
 import path from 'path';
 
 // Function to verify authentication
-async function verifyAuth() {
+async function verifyAuth(request) {
   try {
-    const user = await getSessionUser();
+    const user = await getSessionUser(request.cookies);
     if (!user) {
-      return { authenticated: false };
+      return { authenticated: false, error: 'Unauthorized' };
     }
     return { authenticated: true, user };
   } catch (error) {
-    console.error('Auth error:', error);
-    return { authenticated: false };
+    console.error('Auth error in projects/[id] API:', error);
+    return { authenticated: false, error: 'Authentication error' };
   }
 }
 
 // GET a specific project with its skills
 export async function GET(request, { params }) {
   try {
-    // Verify authentication
-    const authResult = await verifyAuth();
+    const authResult = await verifyAuth(request);
     if (!authResult.authenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
     const { id } = params;
 
-    // Get project details
+    // Ambil project details, termasuk link
     const project = await getProjectById(id);
 
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    // Get skills for this project
     const skills = await getProjectSkills(id);
 
-    // Add skills to project object
     project.skills = skills;
 
     return NextResponse.json(project);
@@ -54,24 +51,22 @@ export async function GET(request, { params }) {
 // PUT - Update a project
 export async function PUT(request, { params }) {
   try {
-    // Verify authentication
-    const authResult = await verifyAuth();
+    const authResult = await verifyAuth(request);
     if (!authResult.authenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
     const { id } = params;
     const formData = await request.formData();
     const title = formData.get('title');
     const description = formData.get('description');
+    const link = formData.get('link'); // Ambil data link
     const selectedSkills = formData.get('skills') ? JSON.parse(formData.get('skills')) : [];
 
-    // Validate required fields
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    // Get current project data
     const currentProject = await getProjectById(id);
     if (!currentProject) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
@@ -80,26 +75,21 @@ export async function PUT(request, { params }) {
     let imagePath = currentProject.image;
     const image = formData.get('image');
     
-    // If there's a new image file, save it
     if (image && image.size > 0) {
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
       
-      // Create uploads directory if it doesn't exist
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'projects');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
       
-      // Generate a unique filename
       const fileName = `${Date.now()}-${image.name.replace(/\s+/g, '-')}`;
       const filePath = path.join(uploadDir, fileName);
       
-      // Write the file
       fs.writeFileSync(filePath, buffer);
       imagePath = `/uploads/projects/${fileName}`;
       
-      // Delete old image if it exists
       if (currentProject.image && currentProject.image.startsWith('/uploads/projects/')) {
         const oldImagePath = path.join(process.cwd(), 'public', currentProject.image);
         if (fs.existsSync(oldImagePath)) {
@@ -108,15 +98,15 @@ export async function PUT(request, { params }) {
       }
     }
 
-    // Update project in database
+    // Perbarui project di database, termasuk link
     await updateProject(id, {
       title,
       description,
       image: imagePath,
+      link, // Perbarui link
       skills: selectedSkills
     });
     
-    // Revalidate the page cache
     revalidatePath('/lyramor/projects');
     revalidatePath(`/lyramor/projects/${id}`);
     revalidatePath('/lyramor');
@@ -126,6 +116,7 @@ export async function PUT(request, { params }) {
       title,
       description,
       image: imagePath,
+      link, // Kembalikan link
       skill_ids: selectedSkills
     });
   } catch (error) {
@@ -137,24 +128,20 @@ export async function PUT(request, { params }) {
 // DELETE - Remove a project
 export async function DELETE(request, { params }) {
   try {
-    // Verify authentication
-    const authResult = await verifyAuth();
+    const authResult = await verifyAuth(request);
     if (!authResult.authenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
     const { id } = params;
 
-    // Get the project first to get the image path
     const project = await getProjectById(id);
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    // Delete the project (this will also delete associated skills due to ON DELETE CASCADE)
     await deleteProject(id);
     
-    // Delete the image if exists
     if (project.image && project.image.startsWith('/uploads/projects/')) {
       const imagePath = path.join(process.cwd(), 'public', project.image);
       if (fs.existsSync(imagePath)) {
@@ -162,11 +149,9 @@ export async function DELETE(request, { params }) {
       }
     }
     
-    // Update the counter - get current count
     const projects = await getProjects();
     await updateProjectCounter(projects.length);
     
-    // Revalidate the page cache
     revalidatePath('/lyramor/projects');
     revalidatePath('/lyramor');
     

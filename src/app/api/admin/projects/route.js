@@ -1,21 +1,34 @@
 // src/app/api/admin/projects/route.js - GET and POST endpoints
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { getSessionUser, withAuth } from '@/lib/auth';
+import { getSessionUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import fs from 'fs';
 import path from 'path';
 
+// Fungsi bantuan untuk memverifikasi autentikasi
+async function verifyAuth(request) {
+  try {
+    const user = await getSessionUser(request.cookies);
+    if (!user) {
+      return { authenticated: false, error: 'Unauthorized' };
+    }
+    return { authenticated: true, user };
+  } catch (error) {
+    console.error('Auth error in projects API:', error);
+    return { authenticated: false, error: 'Authentication error' };
+  }
+}
+
 // GET all projects with their associated skills
 export async function GET(request) {
   try {
-    // Verify authentication
-    const authResult = await verifyAuth();
+    const authResult = await verifyAuth(request);
     if (!authResult.authenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
-    // Get projects with their skills
+    // Pastikan kolom `link` diambil di sini
     const projects = await db.query(`
       SELECT 
         p.*, 
@@ -28,7 +41,6 @@ export async function GET(request) {
       ORDER BY p.created_at DESC
     `);
 
-    // Format the projects data to include skills as an array
     const formattedProjects = projects.map(project => {
       return {
         ...project,
@@ -47,18 +59,17 @@ export async function GET(request) {
 // POST - Create a new project
 export async function POST(request) {
   try {
-    // Verify authentication
-    const authResult = await verifyAuth();
+    const authResult = await verifyAuth(request);
     if (!authResult.authenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
     const formData = await request.formData();
     const title = formData.get('title');
     const description = formData.get('description');
+    const link = formData.get('link'); // Ambil data link
     const selectedSkills = formData.get('skills') ? JSON.parse(formData.get('skills')) : [];
     
-    // Validate required fields
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
@@ -66,35 +77,30 @@ export async function POST(request) {
     let imagePath = null;
     const image = formData.get('image');
     
-    // If there's an image file, save it
     if (image && image.size > 0) {
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
       
-      // Create uploads directory if it doesn't exist
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'projects');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
       
-      // Generate a unique filename
       const fileName = `${Date.now()}-${image.name.replace(/\s+/g, '-')}`;
       const filePath = path.join(uploadDir, fileName);
       
-      // Write the file
       fs.writeFileSync(filePath, buffer);
       imagePath = `/uploads/projects/${fileName}`;
     }
 
-    // Insert project into database
+    // Masukkan project ke database, termasuk link
     const result = await db.query(
-      'INSERT INTO projects (title, description, image) VALUES (?, ?, ?)',
-      [title, description, imagePath]
+      'INSERT INTO projects (title, description, image, link) VALUES (?, ?, ?, ?)',
+      [title, description, imagePath, link || null] // Simpan link
     );
     
     const projectId = result.insertId;
     
-    // Insert skill associations if any
     if (selectedSkills.length > 0) {
       const skillInserts = selectedSkills.map(skillId => {
         return db.query(
@@ -106,10 +112,8 @@ export async function POST(request) {
       await Promise.all(skillInserts);
     }
     
-    // Update the counter
     await db.query('UPDATE counter_projects SET number = (SELECT COUNT(*) FROM projects)');
     
-    // Revalidate the page cache
     revalidatePath('/lyramor/projects');
     revalidatePath('/lyramor');
     
@@ -118,6 +122,7 @@ export async function POST(request) {
       title,
       description,
       image: imagePath,
+      link, // Kembalikan link
       skill_ids: selectedSkills
     });
   } catch (error) {

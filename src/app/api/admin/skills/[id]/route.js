@@ -1,128 +1,132 @@
-
-// src/app/api/admin/project/route.js
+// src/app/api/admin/skills/[id]/route.js
 import { NextResponse } from 'next/server';
-import db, { query } from '@/lib/db'; // Mengimpor db sebagai default dan query sebagai named export
-import { getSessionUser, withAuth } from '@/lib/auth'; // Mengganti verifyAuth dengan fungsi yang ada
+import { query } from '@/lib/db'; // Menggunakan named export 'query'
+import { getSessionUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import fs from 'fs';
 import path from 'path';
 
-// GET all projects with their associated skills
-export async function GET(request) {
+// Helper function to verify authentication (adapted from existing patterns)
+async function verifyAuth(request) {
   try {
-    // Verifikasi autentikasi menggunakan getSessionUser
     const user = await getSessionUser(request.cookies);
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return { authenticated: false, error: 'Unauthorized' };
     }
-
-    // Get projects with their skills
-    const projects = await query(`
-      SELECT 
-        p.*, 
-        GROUP_CONCAT(s.id) as skill_ids,
-        GROUP_CONCAT(s.label) as skill_labels
-      FROM projects p
-      LEFT JOIN project_skills ps ON p.id = ps.project_id
-      LEFT JOIN skills s ON ps.skill_id = s.id
-      GROUP BY p.id
-      ORDER BY p.created_at DESC
-    `);
-
-    // Format the projects data to include skills as an array
-    const formattedProjects = projects.map(project => {
-      return {
-        ...project,
-        skill_ids: project.skill_ids ? project.skill_ids.split(',').map(id => parseInt(id)) : [],
-        skill_labels: project.skill_labels ? project.skill_labels.split(',') : []
-      };
-    });
-
-    return NextResponse.json(formattedProjects);
+    return { authenticated: true, user };
   } catch (error) {
-    console.error('Error getting projects:', error);
-    return NextResponse.json({ error: 'Failed to get projects' }, { status: 500 });
+    console.error('Auth error in skill API:', error);
+    return { authenticated: false, error: 'Authentication error' };
   }
 }
 
-// POST - Create a new project
-export async function POST(request) {
+// GET: Mengambil satu skill berdasarkan ID
+export async function GET(request, { params }) {
   try {
-    // Verifikasi autentikasi menggunakan getSessionUser
-    const user = await getSessionUser(request.cookies);
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authResult = await verifyAuth(request);
+    if (!authResult.authenticated) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
-    const formData = await request.formData();
-    const title = formData.get('title');
-    const description = formData.get('description');
-    const selectedSkills = formData.get('skills') ? JSON.parse(formData.get('skills')) : [];
-    
-    // Validate required fields
-    if (!title) {
-      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+    const { id } = params;
+
+    const skill = await query('SELECT * FROM skills WHERE id = ?', [id]);
+
+    if (skill.length === 0) {
+      return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
     }
 
-    let imagePath = null;
-    const image = formData.get('image');
-    
-    // If there's an image file, save it
-    if (image && image.size > 0) {
-      const bytes = await image.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      
-      // Create uploads directory if it doesn't exist
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'projects');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      
-      // Generate a unique filename
-      const fileName = `${Date.now()}-${image.name.replace(/\s+/g, '-')}`;
-      const filePath = path.join(uploadDir, fileName);
-      
-      // Write the file
-      fs.writeFileSync(filePath, buffer);
-      imagePath = `/uploads/projects/${fileName}`;
+    return NextResponse.json(skill[0]);
+  } catch (error) {
+    console.error('Error getting skill by ID:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PUT: Memperbarui satu skill berdasarkan ID
+export async function PUT(request, { params }) {
+  try {
+    const authResult = await verifyAuth(request);
+    if (!authResult.authenticated) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
-    // Insert project into database
-    const result = await query(
-      'INSERT INTO projects (title, description, image) VALUES (?, ?, ?)',
-      [title, description, imagePath]
+    const { id } = params;
+    const body = await request.json(); // Data dikirim sebagai JSON (bukan FormData) untuk PUT skill
+    const { label, imgSrc, description } = body;
+
+    // Validasi dasar
+    if (!label || label.trim() === '') {
+      return NextResponse.json({ error: 'Skill name is required' }, { status: 400 });
+    }
+
+    // Periksa apakah skill ada
+    const existingSkill = await query('SELECT imgSrc FROM skills WHERE id = ?', [id]);
+    if (existingSkill.length === 0) {
+      return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
+    }
+
+    // Catatan: Jika ada pengunggahan file, itu harus ditangani oleh endpoint /api/admin/upload terpisah
+    // dan imgSrc harus dikirim sebagai URL gambar yang sudah diunggah.
+    // Logika di frontend (page.jsx) sudah melakukan ini.
+
+    await query(
+      'UPDATE skills SET label = ?, imgSrc = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [label, imgSrc || null, description || null, id]
     );
-    
-    const projectId = result.insertId;
-    
-    // Insert skill associations if any
-    if (selectedSkills.length > 0) {
-      const skillInserts = selectedSkills.map(skillId => {
-        return query(
-          'INSERT INTO project_skills (project_id, skill_id) VALUES (?, ?)',
-          [projectId, skillId]
-        );
-      });
-      
-      await Promise.all(skillInserts);
+
+    // Revalidate the page cache jika diperlukan
+    revalidatePath('/lyramor/skills');
+    revalidatePath('/lyramor'); // Dashboard juga mungkin menampilkan skill
+
+    return NextResponse.json({ success: true, message: 'Skill updated successfully' });
+  } catch (error) {
+    console.error('Error updating skill:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// DELETE: Menghapus satu skill berdasarkan ID
+export async function DELETE(request, { params }) {
+  try {
+    const authResult = await verifyAuth(request);
+    if (!authResult.authenticated) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
-    
-    // Update the counter
-    await query('UPDATE counter_projects SET number = (SELECT COUNT(*) FROM projects)');
+
+    const { id } = params;
+
+    // Periksa apakah skill ada dan dapatkan imgSrc-nya jika ada file yang terkait
+    const existingSkill = await query('SELECT imgSrc FROM skills WHERE id = ?', [id]);
+    if (existingSkill.length === 0) {
+      return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
+    }
+
+    const skillImgSrc = existingSkill[0].imgSrc;
+
+    // Hapus skill dari database (junction table experience_skills dan project_skills akan ditangani oleh ON DELETE CASCADE)
+    await query('DELETE FROM skills WHERE id = ?', [id]);
+
+    // Hapus file gambar terkait jika ada dan itu adalah file yang diunggah secara lokal
+    if (skillImgSrc && skillImgSrc.startsWith('/uploads/skills/')) {
+      const imagePath = path.join(process.cwd(), 'public', skillImgSrc);
+      try {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log(`Deleted old skill image: ${imagePath}`);
+        }
+      } catch (fileError) {
+        console.warn(`Could not delete old skill image file ${imagePath}:`, fileError);
+      }
+    }
     
     // Revalidate the page cache
-    revalidatePath('/lyramor/projects');
-    revalidatePath('/lyramor');
-    
-    return NextResponse.json({ 
-      id: projectId,
-      title,
-      description,
-      image: imagePath,
-      skill_ids: selectedSkills
-    });
+    revalidatePath('/lyramor/skills');
+    revalidatePath('/lyramor'); // Dashboard juga mungkin menampilkan skill
+
+    return NextResponse.json({ success: true, message: 'Skill deleted successfully' });
   } catch (error) {
-    console.error('Error creating project:', error);
-    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
+    console.error('Error deleting skill:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -2,11 +2,10 @@
 // src/app/lyramor/experience/page.js
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiLoader } from 'react-icons/fi'; 
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useRouter } from 'next/navigation';
-// Import GripVertical icon from the correct location
 import { GripVertical } from 'lucide-react';
 
 // Experience Item Component
@@ -31,6 +30,11 @@ const ExperienceItem = ({ experience, index, moveExperience, handleDelete }) => 
     },
   });
 
+  // Memecah string technologies menjadi array tag individual
+  const technologiesArray = experience.technologies 
+    ? experience.technologies.split(',').map(tech => tech.trim()) 
+    : [];
+
   return (
     <div
       ref={(node) => preview(drop(node))}
@@ -51,10 +55,19 @@ const ExperienceItem = ({ experience, index, moveExperience, handleDelete }) => 
           <p className="text-zinc-400">
             {experience.company} • {experience.period}
           </p>
-          {experience.technologies && (
-            <p className="text-zinc-500 text-sm mt-1">
-              Teknologi: {experience.technologies}
-            </p>
+          
+          {/* Tampilkan teknologi sebagai tag biru */}
+          {technologiesArray.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {technologiesArray.map((tech, idx) => (
+                <span 
+                  key={idx} // Gunakan idx sebagai key karena tech mungkin duplikat
+                  className="px-2 py-1 bg-sky-600/20 text-sky-400 text-xs rounded-md"
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
           )}
         </div>
         
@@ -105,14 +118,11 @@ export default function ExperiencePage() {
     const dragExperience = experiences[dragIndex];
     const newExperiences = [...experiences];
     
-    // Remove dragExperience from array
     newExperiences.splice(dragIndex, 1);
-    // Insert it at the hover position
     newExperiences.splice(hoverIndex, 0, dragExperience);
     
     setExperiences(newExperiences);
     
-    // Update order in database
     try {
       await fetch('/api/admin/experience/reorder', {
         method: 'POST',
@@ -125,13 +135,12 @@ export default function ExperiencePage() {
       });
     } catch (error) {
       console.error('Error updating experience order:', error);
-      // Revert to original order if update fails
       fetchExperiences();
     }
   };
 
   const handleDelete = async (id) => {
-    if (confirm('Apakah Anda yakin ingin menghapus pengalaman ini?')) {
+    if (confirm('Are you sure you want to delete this experience?')) { 
       try {
         const res = await fetch(`/api/admin/experience/delete?id=${id}`, {
           method: 'DELETE',
@@ -140,10 +149,11 @@ export default function ExperiencePage() {
         if (res.ok) {
           setExperiences(experiences.filter(exp => exp.id !== id));
         } else {
-          alert('Gagal menghapus pengalaman');
+          alert('Failed to delete experience'); 
         }
       } catch (error) {
         console.error('Error deleting experience:', error);
+        alert('An error occurred while deleting experience');
       }
     }
   };
@@ -151,13 +161,13 @@ export default function ExperiencePage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Pengalaman</h1>
+        <h1 className="text-2xl font-bold">Experiences</h1> 
         <Link
           href="/lyramor/experience/new"
           className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 rounded-lg transition-colors"
         >
           <FiPlus size={18} />
-          Tambah Pengalaman
+          Add Experience 
         </Link>
       </div>
 
@@ -183,13 +193,13 @@ export default function ExperiencePage() {
         </DndProvider>
       ) : (
         <div className="text-center py-12 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
-          <p className="text-zinc-400 mb-4">Belum ada entri pengalaman</p>
+          <p className="text-zinc-400 mb-4">No experience entries yet</p> 
           <Link
             href="/lyramor/experience/new"
             className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 rounded-lg transition-colors"
           >
             <FiPlus size={18} />
-            Tambahkan Pengalaman Pertama Anda
+            Add Your First Experience 
           </Link>
         </div>
       )}
