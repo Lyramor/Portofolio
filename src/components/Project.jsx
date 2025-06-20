@@ -4,49 +4,88 @@
  */
 'use client'
 
-import React from 'react';
+import React, { useState, useEffect } from 'react'; 
 import ProjectCard from './ProjectCard';
-
-const projectData = [
-  {
-    title: 'Aplikasi E-Commerce',
-    description: 'Aplikasi e-commerce modern dengan fitur keranjang belanja, pembayaran terintegrasi, dan sistem manajemen produk yang komprehensif. Dibangun menggunakan arsitektur microservice dengan teknologi cloud untuk skalabilitas maksimal.',
-    image: '/images/project/project.jpeg',
-    technologies: ['React.js', 'Node.js', 'MongoDB', 'AWS']
-  },
-  {
-    title: 'Aplikasi Dashboard Analytics',
-    description: 'Dashboard analitik interaktif untuk visualisasi data bisnis dengan grafik real-time dan laporan yang dapat disesuaikan. Sistem ini memungkinkan pengambilan keputusan yang lebih baik berbasis data dengan dukungan machine learning.',
-    image: '/images/project/project.jpeg',
-    technologies: ['Vue.js', 'Express', 'PostgreSQL', 'D3.js']
-  },
-  {
-    title: 'Sistem Manajemen Konten',
-    description: 'CMS yang dapat disesuaikan untuk mengelola konten digital dengan fitur editor WYSIWYG, manajemen pengguna, dan sistem penerbitan yang fleksibel. Mendukung multi-bahasa dan memiliki API yang dapat diakses untuk integrasi pihak ketiga.',
-    image: '/images/project/project.jpeg',
-    technologies: ['Next.js', 'GraphQL', 'MySQL', 'AWS S3']
-  },
-  {
-    title: 'Aplikasi Mobile Fintech',
-    description: 'Aplikasi fintech mobile untuk pembayaran digital, transfer uang, dan manajemen keuangan pribadi. Dilengkapi dengan fitur keamanan tingkat tinggi dan analitik pengeluaran yang komprehensif untuk pengguna.',
-    image: '/images/project/project.jpeg',
-    technologies: ['React Native', 'Firebase', 'Redux', 'Node.js']
-  },
-  {
-    title: 'Platform Pembelajaran Online',
-    description: 'Platform e-learning dengan kursus video interaktif, sistem tugas dan penilaian, serta ruang diskusi langsung. Didukung dengan teknologi streaming adaptif untuk pengalaman belajar yang optimal pada berbagai perangkat.',
-    image: '/images/project/project.jpeg',
-    technologies: ['Angular', 'Django', 'PostgreSQL', 'WebRTC']
-  },
-  {
-    title: 'Sistem Otomatisasi IoT',
-    description: 'Sistem kontrol otomatisasi rumah pintar berbasis IoT dengan dashboard kontrol yang user-friendly, integrasi dengan asisten suara, dan kemampuan pemantauan jarak jauh melalui aplikasi mobile.',
-    image: '/images/project/project.jpeg',
-    technologies: ['React.js', 'Node.js', 'MQTT', 'MongoDB']
-  }
-];
+import { FiLoader, FiAlertCircle } from 'react-icons/fi'; 
 
 export default function Project() {
+  // State untuk menyimpan data proyek, status loading, dan error
+  const [projectData, setProjectData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Fungsi async untuk mengambil data proyek dari API
+    const fetchProjects = async () => {
+      try {
+        setLoading(true); 
+        setError(null); 
+
+        const res = await fetch('/api/projects'); 
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch project data');
+        }
+
+        // Parse respons JSON
+        const data = await res.json();
+        setProjectData(data); 
+      } catch (err) {
+        console.error('Error fetching projects:', err);
+        setError('Failed to load projects. Please try again later.');
+      } finally {
+        setLoading(false); 
+      }
+    };
+
+    fetchProjects();
+  }, []); 
+
+  // Tampilkan loading state
+  if (loading) {
+    return (
+      <section 
+        id="project" 
+        className="section bg-gradient-to-b from-zinc-950 to-zinc-900"
+      >
+        <div className="project-container flex justify-center items-center h-48">
+          <FiLoader className="w-8 h-8 animate-spin text-sky-400" />
+          <p className="ml-3 text-zinc-400">Loading projects...</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Tampilkan error state
+  if (error) {
+    return (
+      <section 
+        id="project" 
+        className="section bg-gradient-to-b from-zinc-950 to-zinc-900"
+      >
+        <div className="project-container text-center py-12 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center gap-3">
+          <FiAlertCircle size={24} />
+          <p>{error}</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Tampilkan pesan jika tidak ada data proyek ditemukan
+  if (projectData.length === 0) {
+    return (
+      <section 
+        id="project" 
+        className="section bg-gradient-to-b from-zinc-950 to-zinc-900"
+      >
+        <div className="project-container text-center py-12 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+          <p className="text-zinc-400">No projects found. Please add projects via admin panel.</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Tampilkan daftar proyek jika data sudah berhasil diambil dan ada
   return (
     <section 
       id="project" 
@@ -58,13 +97,14 @@ export default function Project() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projectData.map((project, index) => (
+          {projectData.map((project) => (
             <ProjectCard 
-              key={index}
+              key={project.id} 
               title={project.title}
               description={project.description}
-              image={project.image}
-              technologies={project.technologies}
+              image={project.image || '/images/default_project_image.png'} 
+              technologies={project.technologies || []} 
+              link={project.link} 
             />
           ))}
         </div>

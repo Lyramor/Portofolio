@@ -4,34 +4,81 @@
  */
 'use client'
 
-import React from 'react';
+import React, { useState, useEffect } from 'react'; 
 import ExperienceCard from './ExperienceCard';
-
-const experienceData = [
-  {
-    period: '2023 - Present',
-    position: 'Senior Full Stack Developer',
-    company: 'Google Inc.',
-    description: 'Led a team in developing and maintaining web applications using JavaScript, React.js, and Node.js. Implemented RESTful APIs and integrated with MongoDB databases. Collaborated with stakeholders to define project requirements and timelines.',
-    technologies: ['Javascript', 'React.js', 'Next.js', 'MongoDB']
-  },
-  {
-    period: '2022 - 2023',
-    position: 'Frontend Developer',
-    company: 'Adobe',
-    description: 'Designed and developed user interfaces for web applications using Next.js and React. Worked closely with backend developers to integrate frontend components with Node.js APIs. Implemented responsive designs and optimized frontend performance.',
-    technologies: ['HTML', 'CSS', 'Vue.js', 'MySQL']
-  },
-  {
-    period: '2021 - 2022',
-    position: 'Full Stack Developer',
-    company: 'Facebook',
-    description: 'Developed and maintained web applications using JavaScript, React.js, and Node.js. Designed and implemented RESTful APIs for data communication. Collaborated with cross-functional teams to deliver high-quality software products on schedule.',
-    technologies: ['Python', 'Svelte', 'Three.js', 'Postgres']
-  }
-];
+import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 
 export default function Experience() {
+  // State untuk menyimpan data pengalaman, status loading, dan error
+  const [experienceData, setExperienceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Fungsi async untuk mengambil data pengalaman dari API
+    const fetchExperiences = async () => {
+      try {
+        setLoading(true); 
+        setError(null); 
+
+        // Mengambil data dari API publik yang baru dibuat
+        const res = await fetch('/api/experiences'); 
+
+        // Periksa apakah respons berhasil (status 200 OK)
+        if (!res.ok) {
+          throw new Error('Failed to fetch experience data');
+        }
+
+        // Parse respons JSON
+        const data = await res.json();
+        setExperienceData(data); 
+      } catch (err) {
+        console.error('Error fetching experiences:', err);
+        setError('Failed to load experience. Please try again later.'); 
+      } finally {
+        setLoading(false); 
+      }
+    };
+
+    fetchExperiences();
+  }, []); 
+
+  // Tampilkan loading state
+  if (loading) {
+    return (
+      <section id="experience" className="section bg-gradient-to-b from-zinc-900 to-zinc-950">
+        <div className="experience-container flex justify-center items-center h-48">
+          <FiLoader className="w-8 h-8 animate-spin text-sky-400" />
+          <p className="ml-3 text-zinc-400">Loading experiences...</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Tampilkan error state
+  if (error) {
+    return (
+      <section id="experience" className="section bg-gradient-to-b from-zinc-900 to-zinc-950">
+        <div className="experience-container text-center py-12 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center gap-3">
+          <FiAlertCircle size={24} />
+          <p>{error}</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Tampilkan pesan jika tidak ada data pengalaman
+  if (experienceData.length === 0) {
+    return (
+      <section id="experience" className="section bg-gradient-to-b from-zinc-900 to-zinc-950">
+        <div className="experience-container text-center py-12 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+          <p className="text-zinc-400">No experience entries found.</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Tampilkan daftar pengalaman jika data sudah berhasil diambil dan ada
   return (
     <section 
       id="experience" 
@@ -45,12 +92,12 @@ export default function Experience() {
         <div className="flex flex-col gap-10">
           {experienceData.map((experience, index) => (
             <ExperienceCard 
-              key={index}
+              key={experience.id} 
               period={experience.period}
               position={experience.position}
               company={experience.company}
               description={experience.description}
-              technologies={experience.technologies}
+              technologies={experience.technologies || []} 
             />
           ))}
         </div>

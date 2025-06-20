@@ -98,6 +98,7 @@ async function initializeDatabase() {
         title VARCHAR(255) NOT NULL,
         description TEXT,
         image VARCHAR(255),
+        link VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
@@ -229,8 +230,8 @@ async function getProjectById(id) {
 
 async function createProject(projectData) {
   const result = await query(
-    'INSERT INTO projects (title, description, image) VALUES (?, ?, ?)',
-    [projectData.title, projectData.description, projectData.image]
+    'INSERT INTO projects (title, description, image, link) VALUES (?, ?, ?, ?)',
+    [projectData.title, projectData.description, projectData.image, projectData.link || null]
   );
   
   if (projectData.skills?.length > 0) {
@@ -241,8 +242,8 @@ async function createProject(projectData) {
 
 async function updateProject(id, projectData) {
   await query(
-    'UPDATE projects SET title = ?, description = ?, image = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [projectData.title, projectData.description, projectData.image, id]
+    'UPDATE projects SET title = ?, description = ?, image = ?, link = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [projectData.title, projectData.description, projectData.image, projectData.link || null, id]
   );
   
   if (projectData.skills) {
@@ -462,7 +463,7 @@ async function getAdminStats() {
 async function migrateExperienceTechnologies() {
   try {
     const [columns] = await query(`SHOW COLUMNS FROM experience LIKE 'technologies'`);
-    if (columns) {
+    if (columns && columns.length > 0) { // Check if column exists
       const experiencesWithTech = await query(`
         SELECT id, technologies FROM experience 
         WHERE technologies IS NOT NULL AND technologies != ''
@@ -476,13 +477,15 @@ async function migrateExperienceTechnologies() {
           
           for (const tech of techs) {
             let [skill] = await query('SELECT id FROM skills WHERE label = ?', [tech]);
-            if (!skill) {
+            if (!skill || skill.length === 0) { // Check if skill exists
               const result = await query(
                 'INSERT INTO skills (label, imgSrc) VALUES (?, ?)',
                 [tech, '/images/skills/default.svg']
               );
               skill = { id: result.insertId };
               console.log(`Created new skill: ${tech} with ID ${skill.id}`);
+            } else {
+              skill = skill[0]; // Get the first result if it's an array
             }
             
             await query(

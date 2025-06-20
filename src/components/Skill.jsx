@@ -4,113 +4,81 @@
  */
 'use client'
 
+import React, { useState, useEffect } from 'react'; // Import useState dan useEffect
 import SkillCard from "./SkillCard";
-
-const skillItem = [
-  {
-    imgSrc: '/images/skill/html5.svg',
-    label: 'HTML',
-    desc: 'Design Tool'
-  },
-  {
-    imgSrc: '/images/skill/css.svg',
-    label: 'CSS',
-    desc: 'User Interface'
-  },
-  {
-    imgSrc: '/images/skill/javascript.svg',
-    label: 'JavaScript',
-    desc: 'Interaction'
-  },
-  {
-    imgSrc: '/images/skill/java.svg',
-    label: 'Java',
-    desc: 'Backend Language'
-  },
-  {
-    imgSrc: '/images/skill/c-sharp.svg',
-    label: 'C#',
-    desc: 'Backend Language'
-  },
-  {
-    imgSrc: '/images/skill/tailwind-css.svg',
-    label: 'TailwindCSS',
-    desc: 'User Interface'
-  },
-  {
-    imgSrc: '/images/skill/laravel.svg',
-    label: 'Laravel',
-    desc: 'PHP Framework'
-  },
-  {
-    imgSrc: '/images/skill/react-js.svg',
-    label: 'ReactJS',
-    desc: 'Frontend Framework'
-  },
-  {
-    imgSrc: '/images/skill/node-js.svg',
-    label: 'NodeJS',
-    desc: 'Web Server'
-  },
-  {
-    imgSrc: '/images/skill/next-js.svg',
-    label: 'NextJS',
-    desc: 'React Framework'
-  },
-  {
-    imgSrc: '/images/skill/alpine-js.svg',
-    label: 'AlpineJS',
-    desc: 'JavaScript Framework' 
-  },
-  {
-    imgSrc: '/images/skill/mysql.svg',
-    label: 'MySQL',
-    desc: 'Database'
-  },
-  {
-    imgSrc: '/images/skill/mongodb.svg',
-    label: 'MongoDB',
-    desc: 'Database'
-  },
-  {
-    imgSrc: '/images/skill/laragon.svg',
-    label: 'Laragon',
-    desc: 'Local Server'
-  },
-  {
-    imgSrc: '/images/skill/docker.svg',
-    label: 'Docker',
-    desc: 'Containerization'
-  },
-  {
-    imgSrc: '/images/skill/github.svg',
-    label: 'GitHub',
-    desc: 'Code Hosting'
-  },
-  {
-    imgSrc: '/images/skill/git.svg',
-    label: 'Git',
-    desc: 'Version Control'
-  },
-  {
-    imgSrc: '/images/skill/postman-api.svg',
-    label: 'Postman',
-    desc: 'API Testing'
-  },
-  {
-    imgSrc: '/images/skill/vs-code.svg',
-    label: 'VS Code',
-    desc: 'Code Editor'
-  },
-  {
-    imgSrc: '/images/skill/unity.svg',
-    label: 'Unity',
-    desc: 'Game Engine'
-  }
-];
-
+import { FiLoader, FiAlertCircle } from 'react-icons/fi'; // Import ikon untuk loading/error
 
 export default function Skill() {
+  // State untuk menyimpan data skill, status loading, dan error
+  const [skillItems, setSkillItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Fungsi async untuk mengambil data skill dari API
+    const fetchSkills = async () => {
+      try {
+        setLoading(true); // Set loading menjadi true saat mulai mengambil data
+        setError(null); // Hapus error sebelumnya
+
+        // Mengambil data dari API publik yang baru dibuat
+        const res = await fetch('/api/skills'); 
+
+        // Periksa apakah respons berhasil (status 200 OK)
+        if (!res.ok) {
+          throw new Error('Failed to fetch skills data');
+        }
+
+        // Parse respons JSON
+        const data = await res.json();
+        setSkillItems(data); // Simpan data skill ke state
+      } catch (err) {
+        console.error('Error fetching skills:', err);
+        setError('Failed to load skills. Please try again later.'); // Set pesan error
+      } finally {
+        setLoading(false); // Set loading menjadi false setelah selesai (berhasil atau error)
+      }
+    };
+
+    fetchSkills(); // Panggil fungsi pengambilan data saat komponen dimuat
+  }, []); // Array dependensi kosong berarti useEffect ini hanya berjalan sekali saat mount
+
+  // Tampilkan loading state
+  if (loading) {
+    return (
+      <section id="skill" className="section">
+        <div className="container max-w-5xl mx-auto flex justify-center items-center h-48">
+          <FiLoader className="w-8 h-8 animate-spin text-sky-400" />
+          <p className="ml-3 text-zinc-400">Loading skills...</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Tampilkan error state
+  if (error) {
+    return (
+      <section id="skill" className="section">
+        <div className="container max-w-5xl mx-auto text-center py-12 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center gap-3">
+          <FiAlertCircle size={24} />
+          <p>{error}</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Tampilkan pesan jika tidak ada data skill ditemukan
+  if (skillItems.length === 0) {
+    return (
+      <section id="skill" className="section">
+        <div className="container max-w-5xl mx-auto text-center py-12 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+          <p className="text-zinc-400">No skills found. Please add skills via admin panel.</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Tampilkan daftar skill jika data sudah berhasil diambil dan ada
   return (
     <section
       id="skill"
@@ -127,12 +95,14 @@ export default function Skill() {
 
         <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {
-            skillItem.map(({ imgSrc, label, desc }, key) =>(
-              <SkillCard 
-                key={key}
-                imgSrc={imgSrc}
-                label={label}
-                desc={desc}
+            skillItems.map((skill) => (
+              <SkillCard
+                key={skill.id} // Gunakan ID unik dari database sebagai key
+                imgSrc={skill.imgSrc}
+                label={skill.label}
+                // Pastikan untuk memetakan 'description' dari DB ke prop 'desc'
+                // Jika description kosong, berikan fallback string
+                desc={skill.description || 'No description provided'} 
               />
             ))
           }
