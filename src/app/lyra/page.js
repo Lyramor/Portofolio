@@ -1,9 +1,9 @@
 'use client';
-// src/app/lyra/page.js
+// src/app/lyra/page.js - FIXED VERSION
 import { useState } from 'react'; // Mengimpor hook useState untuk state komponen
 import Head from 'next/head'; // Mengimpor komponen Head dari Next.js untuk metadata halaman
 import Link from 'next/link'; // Mengimpor komponen Link dari Next.js untuk navigasi
-import { useRouter } from 'next/navigation'; // Mengimpor useRouter untuk navigasi programatis (digunakan untuk fallback error)
+import { useRouter } from 'next/navigation'; // Mengimpor useRouter untuk navigasi programatis
 
 export default function LoginPage() {
   // State untuk menyimpan data form username dan password
@@ -27,7 +27,7 @@ export default function LoginPage() {
     }));
   };
 
-  // Fungsi untuk menangani submit form login
+  // Fungsi untuk menangani submit form login - DIPERBAIKI
   const handleSubmit = async (e) => {
     e.preventDefault(); // Mencegah perilaku default form (refresh halaman)
     setError('');       // Menghapus pesan error sebelumnya
@@ -35,7 +35,6 @@ export default function LoginPage() {
     
     try {
       // Mengirim kredensial login ke API route login
-      // Penting: Endpoint ini sekarang akan mengembalikan respons redirect (HTTP 307) jika login berhasil
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -44,20 +43,27 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       });
 
+      // Parse response JSON
+      const data = await response.json();
+
       // Memeriksa apakah respons dari server TIDAK OK (misalnya status 400, 401, 500)
       if (!response.ok) {
-        // Mengurai respons JSON untuk mendapatkan pesan error spesifik dari server
-        const data = await response.json();
         // Melemparkan error dengan pesan dari server atau pesan default jika tidak ada
         throw new Error(data.message || 'Login gagal. Silakan coba lagi.'); 
       }
 
-      // CATATAN PENTING:
-      // Jika `response.ok` adalah true, itu berarti server telah berhasil mengatur cookie sesi
-      // DAN mengeluarkan respons redirect (seperti yang diimplementasikan di src/app/api/auth/login/route.js).
-      // Browser akan secara OTOMATIS mengikuti redirect ini ke halaman dashboard '/lyramor'.
-      // Oleh karena itu, tidak diperlukan `router.push('/lyramor')` di sisi klien di sini.
-      // Proses navigasi ke '/lyramor' akan ditangani oleh browser secara transparan.
+      // PERBAIKAN: Handle redirect di client-side
+      // Jika login berhasil dan ada redirectTo dalam response
+      if (data.success && data.redirectTo) {
+        console.log('Login berhasil, redirecting ke:', data.redirectTo);
+        
+        // Tunggu sebentar untuk memastikan cookie ter-set dengan benar
+        setTimeout(() => {
+          // Gunakan window.location.href untuk hard redirect
+          // Ini memastikan middleware dapat membaca cookie yang baru saja di-set
+          window.location.href = data.redirectTo;
+        }, 100);
+      }
 
     } catch (err) {
       // Menangkap dan menampilkan error yang terjadi selama proses fetch atau parsing
