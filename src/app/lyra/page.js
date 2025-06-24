@@ -1,33 +1,41 @@
 'use client';
 // src/app/lyra/page.js
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Head from 'next/head';
-import Link from 'next/link';
+import { useState } from 'react'; // Mengimpor hook useState untuk state komponen
+import Head from 'next/head'; // Mengimpor komponen Head dari Next.js untuk metadata halaman
+import Link from 'next/link'; // Mengimpor komponen Link dari Next.js untuk navigasi
+import { useRouter } from 'next/navigation'; // Mengimpor useRouter untuk navigasi programatis (digunakan untuk fallback error)
 
 export default function LoginPage() {
+  // State untuk menyimpan data form username dan password
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
+  // State untuk menyimpan pesan error yang akan ditampilkan ke pengguna
   const [error, setError] = useState('');
+  // State untuk menunjukkan apakah proses login sedang berlangsung
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  // Menginisialisasi router dari Next.js
+  const router = useRouter(); 
 
+  // Fungsi untuk menangani perubahan input pada form
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value // Memperbarui state form sesuai input
     }));
   };
 
+  // Fungsi untuk menangani submit form login
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
+    e.preventDefault(); // Mencegah perilaku default form (refresh halaman)
+    setError('');       // Menghapus pesan error sebelumnya
+    setIsLoading(true); // Mengatur status loading menjadi true
+    
     try {
+      // Mengirim kredensial login ke API route login
+      // Penting: Endpoint ini sekarang akan mengembalikan respons redirect (HTTP 307) jika login berhasil
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -36,18 +44,27 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
-
+      // Memeriksa apakah respons dari server TIDAK OK (misalnya status 400, 401, 500)
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        // Mengurai respons JSON untuk mendapatkan pesan error spesifik dari server
+        const data = await response.json();
+        // Melemparkan error dengan pesan dari server atau pesan default jika tidak ada
+        throw new Error(data.message || 'Login gagal. Silakan coba lagi.'); 
       }
 
-      // Redirect to admin dashboard on successful login
-      router.push('/lyramor');
+      // CATATAN PENTING:
+      // Jika `response.ok` adalah true, itu berarti server telah berhasil mengatur cookie sesi
+      // DAN mengeluarkan respons redirect (seperti yang diimplementasikan di src/app/api/auth/login/route.js).
+      // Browser akan secara OTOMATIS mengikuti redirect ini ke halaman dashboard '/lyramor'.
+      // Oleh karena itu, tidak diperlukan `router.push('/lyramor')` di sisi klien di sini.
+      // Proses navigasi ke '/lyramor' akan ditangani oleh browser secara transparan.
+
     } catch (err) {
-      setError(err.message);
+      // Menangkap dan menampilkan error yang terjadi selama proses fetch atau parsing
+      console.error('Login error:', err);
+      setError(err.message || 'Terjadi kesalahan saat login.');
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Mengatur ulang status loading menjadi false
     }
   };
 
@@ -55,7 +72,7 @@ export default function LoginPage() {
     <>
       <Head>
         <title>Admin Login | Portfolio Dashboard</title>
-        <meta name="robots" content="noindex,nofollow" />
+        <meta name="robots" content="noindex,nofollow" /> {/* Mencegah halaman ini diindeks oleh mesin pencari */}
       </Head>
 
       <div className="min-h-screen flex items-center justify-center bg-zinc-900 p-4">
@@ -63,9 +80,10 @@ export default function LoginPage() {
           <div className="bg-zinc-800 p-8 rounded-2xl shadow-lg border border-zinc-700/30">
             <div className="mb-6 text-center">
               <h1 className="text-2xl font-bold text-sky-400">Portfolio Admin</h1>
-              <p className="text-zinc-400 mt-2">Login to access dashboard</p>
+              <p className="text-zinc-400 mt-2">Login untuk mengakses dashboard</p>
             </div>
 
+            {/* Menampilkan pesan error jika ada */}
             {error && (
               <div className="bg-red-900/50 text-red-300 border border-red-700/50 p-3 rounded-lg mb-4">
                 {error}
@@ -85,7 +103,7 @@ export default function LoginPage() {
                   value={formData.username}
                   onChange={handleChange}
                   className="w-full p-3 bg-zinc-900/60 rounded-lg border border-zinc-700 text-zinc-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50"
-                  placeholder="Enter your username"
+                  placeholder="Masukkan username Anda"
                 />
               </div>
 
@@ -101,22 +119,22 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   className="w-full p-3 bg-zinc-900/60 rounded-lg border border-zinc-700 text-zinc-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50"
-                  placeholder="Enter your password"
+                  placeholder="Masukkan password Anda"
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading} // Tombol dinonaktifkan saat loading
                 className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-lg transition duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? 'Sedang Login...' : 'Login'}
               </button>
             </form>
 
             <div className="mt-6 text-center text-zinc-400 text-sm">
               <Link href="/" className="text-sky-400 hover:underline">
-                Return to Portfolio
+                Kembali ke Portfolio
               </Link>
             </div>
           </div>

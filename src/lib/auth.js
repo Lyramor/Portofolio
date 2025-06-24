@@ -92,3 +92,21 @@ export function sanitizeInput(text) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+export async function POST() {
+  try {
+    const sessionToken = cookies().get('lyra_session')?.value;
+
+    if (sessionToken) {
+      await query('DELETE FROM sessions WHERE token = ?', [sessionToken]); // Hapus dari DB
+      cookies().delete('lyra_session'); // Hapus cookie
+    }
+    return Response.json({ success: true });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return Response.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

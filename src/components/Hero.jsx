@@ -8,8 +8,33 @@ import Image from 'next/image';
 import { ButtonPrimary, ButtonOutline } from './Button';
 import Lanyard from './Lanyard/Lanyard';
 import RotatingText from './RotatingText/RotatingText';
+import { useState, useEffect } from 'react'; // Import useState and useEffect
 
 export default function Hero() {
+  const [cvLink, setCvLink] = useState(null); // State to hold the CV link
+  const [loadingCv, setLoadingCv] = useState(true);
+
+  useEffect(() => {
+    const fetchCvLink = async () => {
+      try {
+        const res = await fetch('/api/cv'); // Create a public API for CV link later
+        if (res.ok) {
+          const data = await res.json();
+          setCvLink(data.link_cv);
+        } else {
+          console.error('Failed to fetch CV link:', res.statusText);
+          setCvLink(null); // Ensure cvLink is null if fetch fails
+        }
+      } catch (error) {
+        console.error('Error fetching CV link:', error);
+        setCvLink(null); // Ensure cvLink is null if an error occurs
+      } finally {
+        setLoadingCv(false);
+      }
+    };
+    fetchCvLink();
+  }, []);
+
   return (
     <section 
       id="home"
@@ -44,10 +69,23 @@ export default function Hero() {
               </h2>
 
               <div className="flex items-center gap-3">
-                <ButtonPrimary
-                  label="Download CV"
-                  icon={true}
-                />
+                {/* Conditionally render ButtonPrimary based on cvLink */}
+                {!loadingCv && cvLink ? (
+                  <ButtonPrimary
+                    label="Download CV"
+                    icon={true}
+                    href={cvLink} // Use the fetched CV link
+                    target="_blank" // Open in new tab
+                  />
+                ) : (
+                  // Optionally render a disabled button or nothing if CV is not available
+                  <ButtonPrimary
+                    label="Download CV"
+                    icon={true}
+                    classes="opacity-50 cursor-not-allowed"
+                    disabled={true}
+                  />
+                )}
                 <ButtonOutline
                   href="#about"
                   label="Scroll down"
