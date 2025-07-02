@@ -20,18 +20,28 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid experience IDs' }, { status: 400 });
     }
     
-    // Baris ini redundan jika kolom sudah ditambahkan oleh GET route atau secara manual,
-    // tetapi tidak berbahaya untuk tetap ada.
-    // Pastikan kolom `display_order` sudah ada di tabel `experience` di database Anda.
-    await query(`
-      ALTER TABLE experience ADD COLUMN IF NOT EXISTS display_order INT DEFAULT NULL
-    `);
+    // Hapus baris ALTER TABLE dari sini.
+    // Kolom `display_order` seharusnya sudah ada dari inisialisasi database.
+    // Menjalankan ALTER TABLE di setiap permintaan reorder tidak efisien dan bisa menyebabkan masalah.
     
-    // Loop melalui setiap ID pengalaman dan perbarui display_order-nya
+    // Gunakan transaksi untuk memastikan semua pembaruan berhasil atau tidak sama sekali
+    // Perhatikan: Fungsi `query` Anda saat ini tidak mendukung transaksi langsung per panggilan.
+    // Jika Anda ingin transaksi atomik, Anda perlu memodifikasi `db.js` untuk mengekspos
+    // `connection.beginTransaction()`, `connection.commit()`, dan `connection.rollback()`.
+    // Untuk saat ini, kita akan menjalankan UPDATE secara berurutan.
+    
     for (let i = 0; i < experienceIds.length; i++) {
+      // Pastikan experienceIds[i] adalah angka yang valid.
+      // Meskipun frontend mengirimnya sebagai angka, validasi ekstra tidak ada salahnya.
+      const experienceId = parseInt(experienceIds[i], 10);
+      if (isNaN(experienceId)) {
+          console.warn(`Invalid experience ID found during reorder: ${experienceIds[i]}`);
+          continue; // Lewati ID yang tidak valid
+      }
+
       await query(
         'UPDATE experience SET display_order = ? WHERE id = ?',
-        [i + 1, experienceIds[i]] // Mengatur urutan baru (dimulai dari 1)
+        [i + 1, experienceId] // Mengatur urutan baru (dimulai dari 1)
       );
     }
     
@@ -43,6 +53,7 @@ export async function POST(request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error reordering experiences:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Berikan pesan error yang lebih informatif jika memungkinkan
+    return NextResponse.json({ error: 'Internal server error during reorder' }, { status: 500 });
   }
 }

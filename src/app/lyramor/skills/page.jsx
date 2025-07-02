@@ -133,7 +133,7 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick, handleTogg
           </div>
         )}
         
-        <h3 className="text-lg font-medium">{skill.label} {skill.archived && <span className="text-sm text-zinc-600">(Archived)</span>}</h3>
+        <h3 className="text-lg font-medium">{skill.label}</h3>
       </div>
       
       <p className="text-zinc-400 text-sm mb-4 flex-grow">
