@@ -4,46 +4,21 @@
  */
 'use client'
 
-import React, { useState, useEffect } from 'react'; // Import useState dan useEffect
+import React, { useState, useEffect } from 'react'; 
 import SkillCard from "./SkillCard";
 import { FiLoader, FiAlertCircle } from 'react-icons/fi'; // Import ikon untuk loading/error
 
-export default function Skill() {
-  // State untuk menyimpan data skill, status loading, dan error
-  const [skillItems, setSkillItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Menerima props yang sudah diambil dari server
+export default function Skill({ skillItems }) {
+  // Hapus state untuk menyimpan data skill, status loading, dan error
+  // const [skillItems, setSkillItems] = useState([]);
+  const [loading, setLoading] = useState(false); // Tidak perlu loading di sini lagi untuk data utama
+  const [error, setError] = useState(null); // Tidak perlu error di sini lagi untuk data utama
 
-  useEffect(() => {
-    // Fungsi async untuk mengambil data skill dari API
-    const fetchSkills = async () => {
-      try {
-        setLoading(true); // Set loading menjadi true saat mulai mengambil data
-        setError(null); // Hapus error sebelumnya
+  // Hapus useEffect untuk fetching data, karena data sudah ada di props
+  // useEffect(() => { /* ... logika fetching ... */ }, []); 
 
-        // Mengambil data dari API publik yang baru dibuat
-        const res = await fetch('/api/skills'); 
-
-        // Periksa apakah respons berhasil (status 200 OK)
-        if (!res.ok) {
-          throw new Error('Failed to fetch skills data');
-        }
-
-        // Parse respons JSON
-        const data = await res.json();
-        setSkillItems(data); // Simpan data skill ke state
-      } catch (err) {
-        console.error('Error fetching skills:', err);
-        setError('Failed to load skills. Please try again later.'); // Set pesan error
-      } finally {
-        setLoading(false); // Set loading menjadi false setelah selesai (berhasil atau error)
-      }
-    };
-
-    fetchSkills(); // Panggil fungsi pengambilan data saat komponen dimuat
-  }, []); // Array dependensi kosong berarti useEffect ini hanya berjalan sekali saat mount
-
-  // Tampilkan loading state
+  // Tampilkan loading state (hanya jika ada loading tambahan di masa depan)
   if (loading) {
     return (
       <section id="skill" className="section">
@@ -55,7 +30,7 @@ export default function Skill() {
     );
   }
 
-  // Tampilkan error state
+  // Tampilkan error state (hanya jika ada error tambahan di masa depan)
   if (error) {
     return (
       <section id="skill" className="section">

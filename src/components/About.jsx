@@ -8,17 +8,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 
-export default function About() {
-  // State untuk menyimpan konten about dan angka counter
-  const [aboutContent, setAboutContent] = useState("");
-  const [projectCount, setProjectCount] = useState(0);
-  const [experienceYears, setExperienceYears] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
+// Menerima props yang sudah diambil dari server
+export default function About({ aboutContent, projectCount, experienceYears }) {
   // State terpisah untuk angka yang dianimasikan
   const [animatedProjectCount, setAnimatedProjectCount] = useState(0);
   const [animatedExperienceYears, setAnimatedExperienceYears] = useState(0);
+  const [loading, setLoading] = useState(false); // Tidak perlu loading di sini lagi untuk data utama
+  const [error, setError] = useState(null); // Tidak perlu error di sini lagi untuk data utama
 
   // Hook useInView untuk mendeteksi saat komponen masuk viewport
   const { ref, inView } = useInView({
@@ -27,47 +23,11 @@ export default function About() {
   });
   const animationStarted = useRef(false); 
 
-  useEffect(() => {
-    // Fungsi async untuk mengambil semua data yang diperlukan
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // 1. Ambil Konten About Me dari API publik
-        const aboutRes = await fetch('/api/about');
-        if (!aboutRes.ok) {
-          throw new Error('Failed to fetch about content');
-        }
-        const aboutData = await aboutRes.json();
-        setAboutContent(aboutData.content || ""); 
-
-        // 2. Ambil Angka Project Counter dari API publik
-        const projectCounterRes = await fetch('/api/counters/projects');
-        if (!projectCounterRes.ok) {
-          throw new Error('Failed to fetch project counter');
-        }
-        const projectCounterData = await projectCounterRes.json();
-        setProjectCount(projectCounterData.number || 0); 
-
-        // 3. Ambil Angka Experience Counter dari API publik
-        const experienceCounterRes = await fetch('/api/counters/experience');
-        if (!experienceCounterRes.ok) {
-          throw new Error('Failed to fetch experience counter');
-        }
-        const experienceCounterData = await experienceCounterRes.json();
-        setExperienceYears(experienceCounterData.number || 0); 
-
-      } catch (err) {
-        console.error('Error fetching About section data:', err);
-        setError('Failed to load About section. Please try again later.'); 
-      } finally {
-        setLoading(false); 
-      }
-    };
-
-    fetchData();
-  }, []);
+  // Hapus useEffect untuk fetching data, karena data sudah ada di props
+  // useEffect(() => {
+  //   const fetchData = async () => { /* ... logika fetching ... */ };
+  //   fetchData();
+  // }, []);
 
   // useEffect untuk animasi angka counter saat komponen masuk viewport
   useEffect(() => {
@@ -106,7 +66,7 @@ export default function About() {
     }
   }, [inView, projectCount, experienceYears]); 
 
-  // Tampilkan loading state
+  // Tampilkan loading state (hanya jika ada loading tambahan di masa depan, saat ini tidak relevan untuk data utama)
   if (loading) {
     return (
       <section id="about" className="section">
@@ -118,7 +78,7 @@ export default function About() {
     );
   }
 
-  // Tampilkan error state
+  // Tampilkan error state (hanya jika ada error tambahan di masa depan, saat ini tidak relevan untuk data utama)
   if (error) {
     return (
       <section id="about" className="section">

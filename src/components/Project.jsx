@@ -8,50 +8,17 @@ import React, { useState, useEffect } from 'react';
 import ProjectCard from './ProjectCard';
 import { FiLoader, FiAlertCircle } from 'react-icons/fi'; 
 
-export default function Project() {
-  // State untuk menyimpan data proyek, status loading, dan error
-  const [projectData, setProjectData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Menerima props yang sudah diambil dari server
+export default function Project({ projectData }) {
+  // Hapus state untuk menyimpan data proyek, status loading, dan error
+  // const [projectData, setProjectData] = useState([]);
+  const [loading, setLoading] = useState(false); // Tidak perlu loading di sini lagi untuk data utama
+  const [error, setError] = useState(null); // Tidak perlu error di sini lagi untuk data utama
 
-  useEffect(() => {
-    // Fungsi async untuk mengambil data proyek dari API
-    const fetchProjects = async () => {
-      try {
-        setLoading(true); 
-        setError(null); 
+  // Hapus useEffect untuk fetching data, karena data sudah ada di props
+  // useEffect(() => { /* ... logika fetching ... */ }, []); 
 
-        const res = await fetch('/api/projects'); 
-
-        if (!res.ok) {
-          // Tangani respons non-OK (misalnya, status 500)
-          const errorData = await res.json();
-          throw new Error(errorData.error || 'Failed to fetch project data');
-        }
-
-        // Parse respons JSON
-        const data = await res.json();
-        
-        // Pastikan data adalah array sebelum menyimpannya ke state
-        if (Array.isArray(data)) {
-          setProjectData(data); 
-        } else {
-          // Jika data bukan array, log error dan set error state
-          console.error('API /api/projects returned non-array data:', data);
-          throw new Error('Invalid data format received from server.');
-        }
-      } catch (err) {
-        console.error('Error fetching projects:', err);
-        setError('Failed to load projects. Please try again later.');
-      } finally {
-        setLoading(false); 
-      }
-    };
-
-    fetchProjects();
-  }, []); 
-
-  // Tampilkan loading state
+  // Tampilkan loading state (hanya jika ada loading tambahan di masa depan)
   if (loading) {
     return (
       <section 
@@ -66,7 +33,7 @@ export default function Project() {
     );
   }
 
-  // Tampilkan error state
+  // Tampilkan error state (hanya jika ada error tambahan di masa depan)
   if (error) {
     return (
       <section 

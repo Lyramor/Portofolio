@@ -8,42 +8,17 @@ import React, { useState, useEffect } from 'react';
 import ExperienceCard from './ExperienceCard';
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
 
-export default function Experience() {
-  // State untuk menyimpan data pengalaman, status loading, dan error
-  const [experienceData, setExperienceData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Menerima props yang sudah diambil dari server
+export default function Experience({ experienceData }) {
+  // Hapus state untuk menyimpan data pengalaman, status loading, dan error
+  // const [experienceData, setExperienceData] = useState([]);
+  const [loading, setLoading] = useState(false); // Tidak perlu loading di sini lagi untuk data utama
+  const [error, setError] = useState(null); // Tidak perlu error di sini lagi untuk data utama
 
-  useEffect(() => {
-    // Fungsi async untuk mengambil data pengalaman dari API
-    const fetchExperiences = async () => {
-      try {
-        setLoading(true); 
-        setError(null); 
+  // Hapus useEffect untuk fetching data, karena data sudah ada di props
+  // useEffect(() => { /* ... logika fetching ... */ }, []); 
 
-        // Mengambil data dari API publik yang baru dibuat
-        const res = await fetch('/api/experiences'); 
-
-        // Periksa apakah respons berhasil (status 200 OK)
-        if (!res.ok) {
-          throw new Error('Failed to fetch experience data');
-        }
-
-        // Parse respons JSON
-        const data = await res.json();
-        setExperienceData(data); 
-      } catch (err) {
-        console.error('Error fetching experiences:', err);
-        setError('Failed to load experience. Please try again later.'); 
-      } finally {
-        setLoading(false); 
-      }
-    };
-
-    fetchExperiences();
-  }, []); 
-
-  // Tampilkan loading state
+  // Tampilkan loading state (hanya jika ada loading tambahan di masa depan)
   if (loading) {
     return (
       <section id="experience" className="section bg-gradient-to-b from-zinc-900 to-zinc-950">
@@ -55,7 +30,7 @@ export default function Experience() {
     );
   }
 
-  // Tampilkan error state
+  // Tampilkan error state (hanya jika ada error tambahan di masa depan)
   if (error) {
     return (
       <section id="experience" className="section bg-gradient-to-b from-zinc-900 to-zinc-950">

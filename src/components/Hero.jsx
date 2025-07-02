@@ -8,32 +8,35 @@ import Image from 'next/image';
 import { ButtonPrimary, ButtonOutline } from './Button';
 import Lanyard from './Lanyard/Lanyard';
 import RotatingText from './RotatingText/RotatingText';
-import { useState, useEffect } from 'react'; // Import useState and useEffect
+// Hapus import useState dan useEffect karena data akan diterima via props
+// import { useState, useEffect } from 'react'; 
 
-export default function Hero() {
-  const [cvLink, setCvLink] = useState(null); // State to hold the CV link
-  const [loadingCv, setLoadingCv] = useState(true);
+export default function Hero({ cvLink }) { // Menerima cvLink sebagai prop
+  // Hapus state cvLink dan loadingCv, serta useEffect untuk fetching data
+  // const [cvLink, setCvLink] = useState(null); 
+  // const [loadingCv, setLoadingCv] = useState(true);
 
-  useEffect(() => {
-    const fetchCvLink = async () => {
-      try {
-        const res = await fetch('/api/cv'); // Create a public API for CV link later
-        if (res.ok) {
-          const data = await res.json();
-          setCvLink(data.link_cv);
-        } else {
-          console.error('Failed to fetch CV link:', res.statusText);
-          setCvLink(null); // Ensure cvLink is null if fetch fails
-        }
-      } catch (error) {
-        console.error('Error fetching CV link:', error);
-        setCvLink(null); // Ensure cvLink is null if an error occurs
-      } finally {
-        setLoadingCv(false);
-      }
-    };
-    fetchCvLink();
-  }, []);
+  // Hapus useEffect ini
+  // useEffect(() => {
+  //   const fetchCvLink = async () => {
+  //     try {
+  //       const res = await fetch('/api/cv'); 
+  //       if (res.ok) {
+  //         const data = await res.json();
+  //         setCvLink(data.link_cv);
+  //       } else {
+  //         console.error('Failed to fetch CV link:', res.statusText);
+  //         setCvLink(null); 
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching CV link:', error);
+  //       setCvLink(null); 
+  //     } finally {
+  //       setLoadingCv(false);
+  //     }
+  //   };
+  //   fetchCvLink();
+  // }, []);
 
   return (
     <section 
@@ -69,16 +72,16 @@ export default function Hero() {
               </h2>
 
               <div className="flex items-center gap-3">
-                {/* Conditionally render ButtonPrimary based on cvLink */}
-                {!loadingCv && cvLink ? (
+                {/* Render ButtonPrimary berdasarkan cvLink yang diterima */}
+                {cvLink ? ( // Tidak perlu loadingCv lagi
                   <ButtonPrimary
                     label="Download CV"
                     icon={true}
-                    href={cvLink} // Use the fetched CV link
-                    target="_blank" // Open in new tab
+                    href={cvLink} // Gunakan CV link dari prop
+                    target="_blank" // Buka di tab baru
                   />
                 ) : (
-                  // Optionally render a disabled button or nothing if CV is not available
+                  // Opsional render tombol yang dinonaktifkan atau tidak ada jika CV tidak tersedia
                   <ButtonPrimary
                     label="Download CV"
                     icon={true}
