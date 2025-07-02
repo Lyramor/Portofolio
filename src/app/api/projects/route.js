@@ -1,11 +1,11 @@
 // src/app/api/projects/route.js (Public API)
 import { NextResponse } from 'next/server';
-import { getProjectsWithSkills } from '@/lib/db'; // Mengambil fungsi dari db.js
+import { query } from '@/lib/db'; // Mengambil fungsi query dari db.js
 
 export async function GET() {
   try {
-    // Mengambil semua proyek beserta skill terkait
-    const projects = await getProjectsWithSkills();
+    // Mengambil semua proyek beserta skill terkait yang TIDAK diarsipkan
+    const projects = await query('SELECT * FROM projects WHERE archived = 0 ORDER BY `order` ASC, created_at DESC');
     
     // Memformat data agar 'technologies' berupa array label skill
     const formattedProjects = projects.map(project => ({

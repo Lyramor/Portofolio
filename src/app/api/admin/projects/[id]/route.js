@@ -30,7 +30,7 @@ export async function GET(request, { params }) {
 
     const { id } = params;
 
-    // Ambil project details, termasuk link
+    // Ambil project details, termasuk link, order, dan archived
     const project = await getProjectById(id);
 
     if (!project) {
@@ -61,6 +61,8 @@ export async function PUT(request, { params }) {
     const title = formData.get('title');
     const description = formData.get('description');
     const link = formData.get('link'); // Ambil data link
+    const order = parseInt(formData.get('order'), 10); // Ambil data order
+    const archived = formData.get('archived') === 'true'; // Ambil data archived (boolean dari string)
     const selectedSkills = formData.get('skills') ? JSON.parse(formData.get('skills')) : [];
 
     if (!title) {
@@ -96,27 +98,42 @@ export async function PUT(request, { params }) {
           fs.unlinkSync(oldImagePath);
         }
       }
+    } else if (formData.get('image_cleared') === 'true') {
+      // Jika frontend memberi sinyal bahwa gambar dihapus
+      imagePath = null;
+      if (currentProject.image && currentProject.image.startsWith('/uploads/projects/')) {
+        const oldImagePath = path.join(process.cwd(), 'public', currentProject.image);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
     }
 
-    // Perbarui project di database, termasuk link
+
+    // Perbarui project di database, termasuk link, order, dan archived
     await updateProject(id, {
       title,
       description,
       image: imagePath,
-      link, // Perbarui link
+      link,
+      order, // Perbarui order
+      archived, // Perbarui archived
       skills: selectedSkills
     });
     
     revalidatePath('/lyramor/projects');
     revalidatePath(`/lyramor/projects/${id}`);
     revalidatePath('/lyramor');
+    revalidatePath('/api/projects'); // Revalidate API publik
     
     return NextResponse.json({ 
       id: parseInt(id),
       title,
       description,
       image: imagePath,
-      link, // Kembalikan link
+      link,
+      order,
+      archived,
       skill_ids: selectedSkills
     });
   } catch (error) {
@@ -154,6 +171,7 @@ export async function DELETE(request, { params }) {
     
     revalidatePath('/lyramor/projects');
     revalidatePath('/lyramor');
+    revalidatePath('/api/projects'); // Revalidate API publik
     
     return NextResponse.json({ success: true });
   } catch (error) {

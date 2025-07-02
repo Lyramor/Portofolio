@@ -28,7 +28,18 @@ export async function GET(request) {
       return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
-    // Pastikan kolom `link` diambil di sini
+    const { searchParams } = new URL(request.url);
+    const filter = searchParams.get('filter'); // 'active', 'archived', or 'all'
+
+    let whereClause = '';
+    if (filter === 'active') {
+      whereClause = 'WHERE p.archived = 0';
+    } else if (filter === 'archived') {
+      whereClause = 'WHERE p.archived = 1';
+    }
+    // Jika filter adalah 'all' atau tidak ada filter, tidak perlu klausa WHERE tambahan
+
+    // Pastikan kolom `link`, `order`, dan `archived` diambil di sini
     const projects = await db.query(`
       SELECT 
         p.*, 
@@ -37,8 +48,9 @@ export async function GET(request) {
       FROM projects p
       LEFT JOIN project_skills ps ON p.id = ps.project_id
       LEFT JOIN skills s ON ps.skill_id = s.id
+      ${whereClause}
       GROUP BY p.id
-      ORDER BY p.created_at DESC
+      ORDER BY p.\`order\` ASC, p.created_at DESC
     `);
 
     const formattedProjects = projects.map(project => {
@@ -93,10 +105,14 @@ export async function POST(request) {
       imagePath = `/uploads/projects/${fileName}`;
     }
 
-    // Masukkan project ke database, termasuk link
+    // Dapatkan order tertinggi yang ada untuk proyek baru
+    const maxOrderResult = await db.query('SELECT MAX(`order`) as maxOrder FROM projects');
+    const nextOrder = maxOrderResult[0].maxOrder !== null ? maxOrderResult[0].maxOrder + 1 : 0;
+
+    // Masukkan project ke database, termasuk link, order, dan archived (default 0)
     const result = await db.query(
-      'INSERT INTO projects (title, description, image, link) VALUES (?, ?, ?, ?)',
-      [title, description, imagePath, link || null] // Simpan link
+      'INSERT INTO projects (title, description, image, link, `order`, archived) VALUES (?, ?, ?, ?, ?, ?)',
+      [title, description, imagePath, link || null, nextOrder, 0] // Simpan order dan default archived ke 0
     );
     
     const projectId = result.insertId;
@@ -116,6 +132,7 @@ export async function POST(request) {
     
     revalidatePath('/lyramor/projects');
     revalidatePath('/lyramor');
+    revalidatePath('/api/projects'); // Revalidate API publik
     
     return NextResponse.json({ 
       id: projectId,

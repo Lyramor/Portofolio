@@ -16,6 +16,7 @@ import {
   FiTrash2 // Untuk tombol hapus gambar
 } from 'react-icons/fi';
 import SkillsSelector from '@/components/admin/SkillsSelector';
+import { toast } from 'react-hot-toast'; // Untuk notifikasi
 
 export default function EditProjectPage({ params }) {
   const router = useRouter();
@@ -30,6 +31,8 @@ export default function EditProjectPage({ params }) {
   const [imageFile, setImageFile] = useState(null);
   const [currentImage, setCurrentImage] = useState(null); // Gambar yang sudah ada di database
   const [imagePreview, setImagePreview] = useState(null); // Pratinjau untuk gambar baru/lama
+  const [archived, setArchived] = useState(false); // New state for archived status
+  const [order, setOrder] = useState(0); // New state for project order
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -39,6 +42,7 @@ export default function EditProjectPage({ params }) {
     const fetchProject = async () => {
       try {
         setLoading(true);
+        setError(null);
         const res = await fetch(`/api/admin/projects/${id}`);
         
         if (!res.ok) {
@@ -52,7 +56,9 @@ export default function EditProjectPage({ params }) {
           description: project.description || '',
           link: project.link || '', // Muat link dari database
         });
-        
+        setArchived(project.archived === 1); // Muat status archived
+        setOrder(project.order || 0); // Muat order
+
         if (project.skills) {
           setSelectedSkills(project.skills.map(skill => skill.id));
         }
@@ -69,6 +75,7 @@ export default function EditProjectPage({ params }) {
       } catch (err) {
         console.error('Error fetching project:', err);
         setError(err.message);
+        toast.error('Failed to load project data');
       } finally {
         setLoading(false);
       }
@@ -96,6 +103,7 @@ export default function EditProjectPage({ params }) {
       // kita mungkin ingin mengembalikan pratinjau ke gambar yang sudah ada.
       setImageFile(null);
       setImagePreview(currentImage); // Kembali ke currentImage jika ada
+      setError(null);
       return;
     }
 
@@ -148,7 +156,9 @@ export default function EditProjectPage({ params }) {
       formDataToSubmit.append('title', formData.title);
       formDataToSubmit.append('description', formData.description);
       formDataToSubmit.append('link', formData.link); // Kirim data link
-      
+      formDataToSubmit.append('order', order); // Kirim data order
+      formDataToSubmit.append('archived', archived ? 'true' : 'false'); // Kirim data archived sebagai string
+
       formDataToSubmit.append('skills', JSON.stringify(selectedSkills));
       
       // Logika untuk mengirim gambar
@@ -157,13 +167,10 @@ export default function EditProjectPage({ params }) {
       } else if (currentImage && !imagePreview) {
         // Jika tidak ada file baru dipilih DAN gambar lama sudah dihapus dari preview
         // Ini menandakan pengguna ingin menghapus gambar yang ada
-        formDataToSubmit.append('image', ''); // Kirim string kosong untuk menandakan penghapusan gambar
-      } else if (currentImage) {
-        // Jika tidak ada file baru dipilih, tapi ada gambar lama yang masih di preview
-        // Ini menandakan pengguna tidak mengubah gambar, pertahankan yang lama
-        // Kita tidak perlu mengirim file apa pun, API akan mempertahankan currentProject.image
-        // atau kita bisa mengirimkan path gambar lama, tergantung implementasi backend.
-        // Asumsikan backend akan mempertahankan gambar jika tidak ada file 'image' yang dikirim.
+        formDataToSubmit.append('image_cleared', 'true'); // Sinyal untuk menghapus gambar
+      } else if (!currentImage && !imagePreview && !imageFile) {
+        // Jika tidak ada gambar sama sekali (baru atau lama), pastikan backend mengosongkan path
+        formDataToSubmit.append('image_cleared', 'true');
       }
 
 
@@ -177,11 +184,13 @@ export default function EditProjectPage({ params }) {
         throw new Error(errorData.error || 'Failed to update project.');
       }
 
+      toast.success('Project updated successfully!');
       router.push('/lyramor/projects');
       router.refresh();
     } catch (err) {
       console.error('Error updating project:', err);
       setError(err.message || 'Failed to update project. Please try again.');
+      toast.error('Failed to update project');
     } finally {
       setSaving(false);
     }
@@ -189,8 +198,8 @@ export default function EditProjectPage({ params }) {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-16">
-        <FiLoader className="animate-spin text-sky-500" size={36} />
+      <div className="h-64 flex items-center justify-center">
+        <FiLoader className="w-8 h-8 animate-spin text-sky-400" />
       </div>
     );
   }
@@ -199,7 +208,14 @@ export default function EditProjectPage({ params }) {
     <div>
       <div className="mb-6 flex items-center">
         <FiBriefcase className="text-sky-400 mr-3" size={24} />
-        <h1 className="text-2xl font-bold">Edit Project</h1>
+        <h1 className="text-2xl font-bold">
+          Edit Project 
+          {archived && (
+            <span className="ml-3 px-3 py-1 text-sm font-medium rounded-full bg-zinc-700 text-zinc-400">
+              (Archived)
+            </span>
+          )}
+        </h1>
       </div>
 
       {error && (
@@ -271,9 +287,9 @@ export default function EditProjectPage({ params }) {
                     <img 
                       src={imagePreview} 
                       alt="Preview" 
-                      className="h-32 object-contain mb-4" 
+                      className="h-32 object-contain" 
                     />
-                    <span className="text-sm">Click to change image</span>
+                    <span className="mt-4 text-sm">Click to change image</span>
                   </div>
                 ) : (
                   <>
@@ -314,6 +330,40 @@ export default function EditProjectPage({ params }) {
               selectedSkills={selectedSkills} 
               onChange={handleSkillsChange} 
             />
+          </div>
+
+          {/* New: Project Order */}
+          <div className="mb-6">
+            <label htmlFor="order" className="block text-sm font-medium text-zinc-300 mb-2">
+              Display Order
+            </label>
+            <input
+              type="number"
+              id="order"
+              name="order"
+              value={order}
+              onChange={(e) => setOrder(parseInt(e.target.value, 10) || 0)}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              placeholder="e.g., 0, 1, 2 (lower number appears first)"
+            />
+            <p className="text-zinc-500 text-sm mt-2">
+              Controls the order of projects on the public portfolio.
+            </p>
+          </div>
+
+          {/* New: Archived Toggle */}
+          <div className="mb-6 flex items-center">
+            <input
+              type="checkbox"
+              id="archived"
+              name="archived"
+              checked={archived}
+              onChange={(e) => setArchived(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-500 text-sky-600 focus:ring-sky-500 focus:ring-offset-zinc-800"
+            />
+            <label htmlFor="archived" className="ml-2 text-sm font-medium text-zinc-300">
+              Archive Project (Tidak terlihat di halaman utama)
+            </label>
           </div>
 
           <div className="flex justify-end gap-4 mt-8">

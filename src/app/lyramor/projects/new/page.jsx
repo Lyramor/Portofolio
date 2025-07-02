@@ -16,6 +16,7 @@ import {
   FiLink // Untuk ikon link
 } from 'react-icons/fi';
 import SkillsSelector from '@/components/admin/SkillsSelector';
+import { toast } from 'react-hot-toast'; // Untuk notifikasi
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -117,12 +118,14 @@ export default function NewProjectPage() {
         throw new Error(errorData.error || 'Failed to create project.');
       }
 
-      // Alihkan ke halaman skills setelah berhasil membuat proyek
-      router.push('/lyramor/skills'); 
+      toast.success('Project created successfully!');
+      // Alihkan ke halaman projects setelah berhasil membuat proyek
+      router.push('/lyramor/projects'); 
       router.refresh(); 
     } catch (err) {
       console.error('Error creating project:', err);
       setError(err.message || 'Failed to create project. Please try again.');
+      toast.error('Failed to create project');
     } finally {
       setSaving(false);
     }
@@ -170,7 +173,7 @@ export default function NewProjectPage() {
               value={formData.description}
               onChange={handleChange}
               rows="4"
-              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
               placeholder="Brief description of your project"
             />
           </div>
@@ -204,9 +207,9 @@ export default function NewProjectPage() {
                     <img 
                       src={imagePreview} 
                       alt="Preview" 
-                      className="h-32 object-contain mb-4" 
+                      className="h-32 object-contain" 
                     />
-                    <span className="text-sm">Click to change image</span>
+                    <span className="mt-4 text-sm">Click to change image</span>
                   </div>
                 ) : (
                   <>

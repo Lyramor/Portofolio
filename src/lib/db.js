@@ -59,6 +59,9 @@ async function initializeDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         label VARCHAR(100) NOT NULL UNIQUE,
         imgSrc VARCHAR(255),
+        description TEXT, -- Mengubah VARCHAR ke TEXT untuk deskripsi skill
+        \`order\` INT DEFAULT NULL, -- Menambahkan kolom order untuk pengurutan
+        archived TINYINT(1) DEFAULT 0, -- Menambahkan kolom archived
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
@@ -99,6 +102,8 @@ async function initializeDatabase() {
         description TEXT,
         image VARCHAR(255),
         link VARCHAR(255),
+        \`order\` INT DEFAULT NULL, -- Menambahkan kolom order untuk pengurutan proyek
+        archived TINYINT(1) DEFAULT 0, -- Menambahkan kolom archived untuk proyek
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
@@ -114,7 +119,7 @@ async function initializeDatabase() {
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE,
         UNIQUE KEY (project_id, skill_id)
-    `);
+    )`);
 
     // Counters table for projects
     await query(`
@@ -146,8 +151,22 @@ async function initializeDatabase() {
       )
     `);
 
+    // CV table
+    await query(`
+      CREATE TABLE IF NOT EXISTS cv (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        link_cv TEXT NOT NULL,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+
     console.log('Database initialized successfully');
     await migrateExperienceTechnologies();
+    await migrateSkillDescription(); // Panggil migrasi untuk deskripsi skill
+    await addOrderAndArchivedToSkills(); // Panggil migrasi untuk kolom order dan archived di skills
+    await addOrderAndArchivedToProjects(); // Panggil migrasi untuk kolom order dan archived di projects
+
   } catch (error) {
     console.error('Failed to initialize database:', error);
     throw error;
@@ -197,18 +216,18 @@ async function seedSkills() {
     const [skills] = await query('SELECT COUNT(*) as count FROM skills');
     if (skills[0].count === 0) {
       const defaultSkills = [
-        { label: 'JavaScript', imgSrc: '/images/skills/javascript.svg' },
-        { label: 'React', imgSrc: '/images/skills/react.svg' },
-        { label: 'Node.js', imgSrc: '/images/skills/nodejs.svg' },
-        { label: 'MySQL', imgSrc: '/images/skills/mysql.svg' },
-        { label: 'HTML', imgSrc: '/images/skills/html.svg' },
-        { label: 'CSS', imgSrc: '/images/skills/css.svg' }
+        { label: 'JavaScript', imgSrc: '/images/skills/javascript.svg', description: 'Bahasa pemrograman inti untuk web interaktif.' },
+        { label: 'React', imgSrc: '/images/skills/react.svg', description: 'Pustaka JavaScript untuk membangun antarmuka pengguna.' },
+        { label: 'Node.js', imgSrc: '/images/skills/nodejs.svg', description: 'Lingkungan runtime JavaScript sisi server.' },
+        { label: 'MySQL', imgSrc: '/images/skills/mysql.svg', description: 'Sistem manajemen database relasional populer.' },
+        { label: 'HTML', imgSrc: '/images/skills/html.svg', description: 'Bahasa markup standar untuk membuat halaman web.' },
+        { label: 'CSS', imgSrc: '/images/skills/css.svg', description: 'Bahasa stylesheet untuk mendesain tampilan web.' }
       ];
 
       for (const skill of defaultSkills) {
         await query(
-          'INSERT INTO skills (label, imgSrc) VALUES (?, ?)',
-          [skill.label, skill.imgSrc]
+          'INSERT INTO skills (label, imgSrc, description, `order`, archived) VALUES (?, ?, ?, ?, ?)',
+          [skill.label, skill.imgSrc, skill.description, 0, 0] // Default order 0, not archived
         );
       }
       console.log('✅ Initial skills created');
@@ -220,7 +239,8 @@ async function seedSkills() {
 
 // Project Management Functions
 async function getProjects() {
-  return await query('SELECT * FROM projects ORDER BY created_at DESC');
+  // Mengambil proyek dan mengurutkan berdasarkan kolom 'order'
+  return await query('SELECT * FROM projects ORDER BY `order` ASC, created_at DESC');
 }
 
 async function getProjectById(id) {
@@ -229,9 +249,10 @@ async function getProjectById(id) {
 }
 
 async function createProject(projectData) {
+  // Menambahkan kolom `order` dan `archived`
   const result = await query(
-    'INSERT INTO projects (title, description, image, link) VALUES (?, ?, ?, ?)',
-    [projectData.title, projectData.description, projectData.image, projectData.link || null]
+    'INSERT INTO projects (title, description, image, link, `order`, archived) VALUES (?, ?, ?, ?, ?, ?)',
+    [projectData.title, projectData.description, projectData.image, projectData.link || null, projectData.order, projectData.archived]
   );
   
   if (projectData.skills?.length > 0) {
@@ -241,9 +262,10 @@ async function createProject(projectData) {
 }
 
 async function updateProject(id, projectData) {
+  // Menambahkan kolom `order` dan `archived`
   await query(
-    'UPDATE projects SET title = ?, description = ?, image = ?, link = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [projectData.title, projectData.description, projectData.image, projectData.link || null, id]
+    'UPDATE projects SET title = ?, description = ?, image = ?, link = ?, `order` = ?, archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [projectData.title, projectData.description, projectData.image, projectData.link || null, projectData.order, projectData.archived, id]
   );
   
   if (projectData.skills) {
@@ -291,7 +313,8 @@ async function updateProjectSkills(projectId, skillIds) {
 }
 
 async function getProjectsWithSkills() {
-  const projects = await query('SELECT * FROM projects ORDER BY created_at DESC');
+  // Mengambil proyek dan skill terkait, diurutkan berdasarkan `order`
+  const projects = await query('SELECT * FROM projects ORDER BY `order` ASC, created_at DESC');
   return await Promise.all(
     projects.map(async project => ({
       ...project,
@@ -460,6 +483,8 @@ async function getAdminStats() {
   };
 }
 
+// --- Migrasi Database (untuk kolom baru) ---
+
 async function migrateExperienceTechnologies() {
   try {
     const [columns] = await query(`SHOW COLUMNS FROM experience LIKE 'technologies'`);
@@ -501,9 +526,70 @@ async function migrateExperienceTechnologies() {
       }
     }
   } catch (error) {
-    console.error('Migration error:', error);
+    console.error('Migration error (migrateExperienceTechnologies):', error);
   }
 }
+
+async function migrateSkillDescription() {
+  try {
+    const [columns] = await query(`SHOW COLUMNS FROM skills LIKE 'description'`);
+    if (columns && columns.length === 0) {
+      await query(`ALTER TABLE skills ADD COLUMN description TEXT DEFAULT NULL`);
+      console.log('Added description column to skills table.');
+    }
+  } catch (error) {
+    console.error('Migration error (migrateSkillDescription):', error);
+  }
+}
+
+async function addOrderAndArchivedToSkills() {
+  try {
+    const [orderColumn] = await query(`SHOW COLUMNS FROM skills LIKE 'order'`);
+    if (orderColumn && orderColumn.length === 0) {
+      await query(`ALTER TABLE skills ADD COLUMN \`order\` INT DEFAULT NULL`);
+      console.log('Added `order` column to skills table.');
+      // Inisialisasi order untuk skill yang sudah ada
+      const existingSkills = await query('SELECT id FROM skills ORDER BY created_at ASC');
+      for (let i = 0; i < existingSkills.length; i++) {
+        await query('UPDATE skills SET `order` = ? WHERE id = ?', [i, existingSkills[i].id]);
+      }
+      console.log('Initialized `order` for existing skills.');
+    }
+
+    const [archivedColumn] = await query(`SHOW COLUMNS FROM skills LIKE 'archived'`);
+    if (archivedColumn && archivedColumn.length === 0) {
+      await query(`ALTER TABLE skills ADD COLUMN archived TINYINT(1) DEFAULT 0`);
+      console.log('Added `archived` column to skills table.');
+    }
+  } catch (error) {
+    console.error('Migration error (addOrderAndArchivedToSkills):', error);
+  }
+}
+
+async function addOrderAndArchivedToProjects() {
+  try {
+    const [orderColumn] = await query(`SHOW COLUMNS FROM projects LIKE 'order'`);
+    if (orderColumn && orderColumn.length === 0) {
+      await query(`ALTER TABLE projects ADD COLUMN \`order\` INT DEFAULT NULL`);
+      console.log('Added `order` column to projects table.');
+      // Inisialisasi order untuk proyek yang sudah ada
+      const existingProjects = await query('SELECT id FROM projects ORDER BY created_at ASC');
+      for (let i = 0; i < existingProjects.length; i++) {
+        await query('UPDATE projects SET `order` = ? WHERE id = ?', [i, existingProjects[i].id]);
+      }
+      console.log('Initialized `order` for existing projects.');
+    }
+
+    const [archivedColumn] = await query(`SHOW COLUMNS FROM projects LIKE 'archived'`);
+    if (archivedColumn && archivedColumn.length === 0) {
+      await query(`ALTER TABLE projects ADD COLUMN archived TINYINT(1) DEFAULT 0`);
+      console.log('Added `archived` column to projects table.');
+    }
+  } catch (error) {
+    console.error('Migration error (addOrderAndArchivedToProjects):', error);
+  }
+}
+
 
 // Named exports
 export {
