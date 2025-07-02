@@ -16,7 +16,6 @@ import SplashCursor from '@/components/SplashCursor/SplashCursor';
 export default function HomePage() {
   return (
     <div className="relative overflow-hidden">
-      <SplashCursor/>
       <Header />
       <main>
         <Hero/>

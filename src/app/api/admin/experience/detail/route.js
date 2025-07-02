@@ -3,6 +3,7 @@ import { query } from '@/lib/db';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
+import { revalidatePath } from 'next/cache'; // Import revalidatePath
 
 export async function GET(request) {
   try {
@@ -89,6 +90,11 @@ export async function PUT(request) {
         );
       }
     }
+
+    // Revalidate paths setelah update
+    revalidatePath('/lyramor/experience'); // Untuk halaman admin experience
+    revalidatePath('/api/experiences'); // Untuk API publik yang digunakan di halaman utama
+    revalidatePath('/'); // Untuk halaman utama jika menampilkan pengalaman langsung
     
     return NextResponse.json({ 
       id: parseInt(id),

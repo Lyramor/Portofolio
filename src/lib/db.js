@@ -356,7 +356,7 @@ async function updateExperienceSkills(experienceId, skillIds) {
 
 // Skills Management
 async function getSkills() {
-  return await query('SELECT * FROM skills ORDER BY label ASC');
+  return await query('SELECT * FROM skills ORDER BY `order` ASC, label ASC');
 }
 
 async function createSkill(skillData) {

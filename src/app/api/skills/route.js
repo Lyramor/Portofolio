@@ -1,12 +1,15 @@
 // src/app/api/skills/route.js
 import { NextResponse } from 'next/server';
-import { getSkills } from '@/lib/db'; // Mengambil fungsi getSkills dari db.js
+import { query } from '@/lib/db'; // Mengambil fungsi query dari db.js
 
 export async function GET() {
   try {
-    // Mengambil semua skill dari database
-    // Fungsi getSkills sudah mengurutkan berdasarkan label secara default
-    const skills = await getSkills(); 
+    // Mengambil semua skill dari database yang TIDAK diarsipkan
+    // Urutkan berdasarkan kolom 'order' (atau 'display_order') secara ascending.
+    // Jika ada skill yang tidak memiliki nilai 'order' (misalnya NULL),
+    // atau jika ada skill dengan nilai 'order' yang sama,
+    // maka skill tersebut akan diurutkan berdasarkan 'label' secara alfabetis.
+    const skills = await query('SELECT * FROM skills WHERE archived = 0 ORDER BY `order` ASC, label ASC'); 
 
     // Mengembalikan data skill
     return NextResponse.json(skills);

@@ -4,8 +4,8 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 
-// Get all skills
-export async function GET() {
+// Get all skills (with optional filtering for archived status)
+export async function GET(request) {
   try {
     // Authentication
     const cookieStore = cookies();
@@ -15,8 +15,20 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const filter = searchParams.get('filter'); // 'active', 'archived', or 'all'
+
+    let whereClause = '';
+    if (filter === 'active') {
+      whereClause = 'WHERE archived = 0';
+    } else if (filter === 'archived') {
+      whereClause = 'WHERE archived = 1';
+    }
+    // Jika filter adalah 'all' atau tidak ada filter, tidak perlu klausa WHERE tambahan
+
     // Get all skills from the database, order by the order field if it exists, otherwise by label
-    const skills = await query('SELECT * FROM skills ORDER BY `order` ASC, label ASC');
+    // Menggunakan kolom `order` untuk pengurutan, dan `label` sebagai fallback
+    const skills = await query(`SELECT * FROM skills ${whereClause} ORDER BY \`order\` ASC, label ASC`);
     
     return NextResponse.json(skills);
   } catch (error) {
@@ -25,7 +37,7 @@ export async function GET() {
   }
 }
 
-// Create a new skill
+// Create a new skill (Tidak ada perubahan pada POST)
 export async function POST(request) {
   try {
     // Authentication
@@ -48,10 +60,10 @@ export async function POST(request) {
     const maxOrderResult = await query('SELECT MAX(`order`) as maxOrder FROM skills');
     const nextOrder = maxOrderResult[0].maxOrder !== null ? maxOrderResult[0].maxOrder + 1 : 0;
 
-    // Insert skill into database with the next order value
+    // Insert skill into database with the next order value, default archived to 0
     const result = await query(
-      'INSERT INTO skills (label, imgSrc, description, `order`) VALUES (?, ?, ?, ?)',
-      [label, imgSrc || null, description || null, nextOrder]
+      'INSERT INTO skills (label, imgSrc, description, `order`, archived) VALUES (?, ?, ?, ?, ?)',
+      [label, imgSrc || null, description || null, nextOrder, 0] // Default archived to 0 (false)
     );
     
     // Get the newly created skill

@@ -1,5 +1,5 @@
 'use client';
-// src/app/lyramor/skills/page.jsx - Enhanced drag-and-drop experience
+// src/app/lyramor/skills/page.jsx - Enhanced drag-and-drop experience with archiving
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
@@ -11,16 +11,20 @@ import {
   FiTrash2, 
   FiLoader,
   FiAlertCircle,
-  FiMove
+  FiMove,
+  FiArchive, // Icon untuk arsip
+  FiEye,     // Icon untuk aktif
+  FiEyeOff   // Icon untuk diarsipkan
 } from 'react-icons/fi';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGripLines } from '@fortawesome/free-solid-svg-icons';
+import { toast } from 'react-hot-toast'; // Import toast for notifications
 
 // Drag-and-drop item type
 const ITEM_TYPE = 'skill';
 
-// Draggable skill component with improved animations and feedback
-const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick }) => {
+// Komponen skill yang dapat di-drag dengan animasi dan feedback yang ditingkatkan
+const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick, handleToggleArchive }) => {
   const ref = useRef(null);
   
   const [{ isDragging }, drag, preview] = useDrag({
@@ -41,44 +45,44 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick }) => {
       const dragIndex = item.index;
       const hoverIndex = index;
       
-      // Don't replace items with themselves
+      // Jangan ganti item dengan dirinya sendiri
       if (dragIndex === hoverIndex) {
         return;
       }
       
-      // Determine rectangle on screen
+      // Tentukan persegi panjang di layar
       const hoverBoundingRect = ref.current.getBoundingClientRect();
       
-      // Get vertical middle
+      // Dapatkan titik tengah vertikal
       const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
       
-      // Determine mouse position
+      // Tentukan posisi mouse
       const clientOffset = monitor.getClientOffset();
       
-      // Get pixels to the top
+      // Dapatkan piksel ke atas
       const hoverClientY = clientOffset.y - hoverBoundingRect.top;
       
-      // Only perform the move when the mouse has crossed half of the items height
-      // When dragging downwards, only move when the cursor is below 50%
-      // When dragging upwards, only move when the cursor is above 50%
+      // Lakukan perpindahan hanya jika mouse telah melewati setengah tinggi item
+      // Saat menyeret ke bawah, pindahkan hanya jika kursor di bawah 50%
+      // Saat menyeret ke atas, pindahkan hanya jika kursor di atas 50%
       
-      // Dragging downwards
+      // Menyeret ke bawah
       if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
         return;
       }
       
-      // Dragging upwards
+      // Menyeret ke atas
       if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
         return;
       }
       
-      // Time to actually perform the action
+      // Waktunya untuk benar-benar melakukan tindakan
       moveSkill(dragIndex, hoverIndex);
       
-      // Note: we're mutating the monitor item here!
-      // Generally it's better to avoid mutations,
-      // but it's good here for the sake of performance
-      // to avoid expensive index searches.
+      // Catatan: kita memutasi item monitor di sini!
+      // Umumnya lebih baik menghindari mutasi,
+      // tetapi bagus di sini demi kinerja
+      // untuk menghindari pencarian indeks yang mahal.
       item.index = hoverIndex;
     },
     collect: (monitor) => ({
@@ -87,19 +91,20 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick }) => {
     }),
   });
   
-  // Initialize refs for both drag and drop
+  // Inisialisasi ref untuk drag dan drop
   preview(drop(ref));
 
-  // Apply drag handle only to the grip icon
+  // Terapkan drag handle hanya pada ikon grip
   const dragHandle = useRef(null);
   drag(dragHandle);
   
-  // Visual styles for different states
+  // Gaya visual untuk status yang berbeda
   const cardStyle = `
     bg-zinc-800 border rounded-xl p-6 flex flex-col
     transition-all duration-200 transform
     ${isDragging ? 'opacity-50 scale-105 shadow-xl z-10 border-sky-500/50' : 'opacity-100 border-zinc-700'}
     ${isOver && !isDragging ? 'bg-zinc-750 border-zinc-600' : ''}
+    ${skill.archived ? 'opacity-70 bg-zinc-900 border-zinc-800 line-through text-zinc-500' : ''}
   `;
 
   return (
@@ -119,7 +124,7 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick }) => {
         </div>
         
         {skill.imgSrc && (
-          <div className="w-10 h-10 bg-zinc-700 rounded-lg p-2 mr-3 flex items-center justify-center overflow-hidden">
+          <div className={`w-10 h-10 bg-zinc-700 rounded-lg p-2 mr-3 flex items-center justify-center overflow-hidden ${skill.archived ? 'grayscale' : ''}`}>
             <img 
               src={skill.imgSrc.startsWith('/') ? skill.imgSrc : `/${skill.imgSrc}`} 
               alt={skill.label} 
@@ -128,7 +133,7 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick }) => {
           </div>
         )}
         
-        <h3 className="text-lg font-medium">{skill.label}</h3>
+        <h3 className="text-lg font-medium">{skill.label} {skill.archived && <span className="text-sm text-zinc-600">(Archived)</span>}</h3>
       </div>
       
       <p className="text-zinc-400 text-sm mb-4 flex-grow">
@@ -144,13 +149,26 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick }) => {
           <span>Edit</span>
         </Link>
         
-        <button
-          onClick={() => handleDeleteClick(skill)}
-          className="text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
-        >
-          <FiTrash2 size={16} />
-          <span>Delete</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleToggleArchive(skill, !skill.archived)} // Mengirim seluruh objek skill
+            className={`p-2 rounded-lg transition-colors ${
+              skill.archived 
+                ? 'text-green-400 hover:text-green-300 bg-green-600/20 hover:bg-green-600/40' 
+                : 'text-orange-400 hover:text-orange-300 bg-orange-600/20 hover:bg-orange-600/40'
+            }`}
+            title={skill.archived ? "Unarchive Skill" : "Archive Skill"}
+          >
+            {skill.archived ? <FiEye size={16} /> : <FiEyeOff size={16} />}
+          </button>
+          <button
+            onClick={() => handleDeleteClick(skill)}
+            className="text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+          >
+            <FiTrash2 size={16} />
+            <span>Delete</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -165,15 +183,18 @@ export default function SkillsIndexPage() {
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [orderChanged, setOrderChanged] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [filter, setFilter] = useState('active'); // 'active', 'archived', 'all'
 
   useEffect(() => {
     fetchSkills();
-  }, []);
+  }, [filter]); // Muat ulang skill saat filter berubah
 
   const fetchSkills = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin/skills');
+      setError(null);
+      
+      const res = await fetch(`/api/admin/skills?filter=${filter}`);
       
       if (!res.ok) {
         throw new Error('Failed to fetch skills');
@@ -181,26 +202,26 @@ export default function SkillsIndexPage() {
       
       const data = await res.json();
       
-      // If skills don't have an order property, assign default orders
+      // Jika skill tidak memiliki properti order, tetapkan urutan default
       const skillsWithOrder = data.map((skill, index) => ({
         ...skill,
         order: skill.order !== undefined ? skill.order : index
       }));
       
-      // Sort by order field
+      // Urutkan berdasarkan kolom order (backend seharusnya menangani ini, tetapi untuk konsistensi sisi klien)
       skillsWithOrder.sort((a, b) => a.order - b.order);
       
       setSkills(skillsWithOrder);
-      setError(null);
     } catch (err) {
       console.error('Error fetching skills:', err);
       setError('Failed to load skills. Please try again.');
+      toast.error('Failed to load skills');
     } finally {
       setLoading(false);
     }
   };
 
-  // Optimized move function with less frequent state updates
+  // Fungsi pindah yang dioptimalkan dengan pembaruan state yang lebih jarang
   const moveSkill = (fromIndex, toIndex) => {
     setIsDragging(true);
     
@@ -209,7 +230,7 @@ export default function SkillsIndexPage() {
       const [movedSkill] = updatedSkills.splice(fromIndex, 1);
       updatedSkills.splice(toIndex, 0, movedSkill);
       
-      // Update order properties
+      // Perbarui properti order
       return updatedSkills.map((skill, index) => ({
         ...skill,
         order: index
@@ -219,7 +240,7 @@ export default function SkillsIndexPage() {
     setOrderChanged(true);
   };
 
-  // Add drag end handler
+  // Tambahkan penangan drag end (tidak langsung digunakan di sini, tetapi praktik yang baik untuk konteks DND)
   const handleDragEnd = () => {
     setIsDragging(false);
   };
@@ -228,7 +249,7 @@ export default function SkillsIndexPage() {
     try {
       setIsSavingOrder(true);
       
-      // Call API to update skill orders
+      // Panggil API untuk memperbarui urutan skill
       const orderUpdates = skills.map((skill) => ({
         id: skill.id,
         order: skill.order
@@ -247,11 +268,50 @@ export default function SkillsIndexPage() {
       }
       
       setOrderChanged(false);
+      toast.success('Skill order saved successfully!');
+      fetchSkills(); // Muat ulang untuk memastikan konsistensi
     } catch (err) {
       console.error('Error saving skill order:', err);
       setError('Failed to save skill order. Please try again.');
+      toast.error('Failed to save skill order');
     } finally {
       setIsSavingOrder(false);
+    }
+  };
+
+  // Fungsi handleToggleArchive yang diperbarui
+  const handleToggleArchive = async (skillToUpdate, newArchivedStatus) => {
+    try {
+      const res = await fetch(`/api/admin/skills/${skillToUpdate.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          label: skillToUpdate.label, // Kirim label
+          imgSrc: skillToUpdate.imgSrc, // Kirim imgSrc
+          description: skillToUpdate.description, // Kirim description
+          archived: newArchivedStatus // Kirim status archived yang baru
+        }), 
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || `Failed to ${newArchivedStatus ? 'archive' : 'unarchive'} skill`);
+      }
+      
+      // Perbarui state secara lokal terlebih dahulu untuk respons UI yang lebih cepat
+      setSkills(prevSkills => 
+        prevSkills.map(skill => 
+          skill.id === skillToUpdate.id ? { ...skill, archived: newArchivedStatus } : skill
+        )
+      );
+      toast.success(`Skill ${newArchivedStatus ? 'archived' : 'unarchived'} successfully!`);
+      fetchSkills(); // Muat ulang untuk menerapkan filter jika perlu
+    } catch (err) {
+      console.error('Error toggling archive status:', err);
+      setError(err.message || `Failed to ${newArchivedStatus ? 'archive' : 'unarchive'} skill. Please try again.`);
+      toast.error(`Failed to ${newArchivedStatus ? 'archive' : 'unarchive'} skill`);
     }
   };
 
@@ -267,21 +327,24 @@ export default function SkillsIndexPage() {
         throw new Error(errorData.error || 'Failed to delete skill');
       }
       
-      // Update the skills list after deletion
+      // Perbarui daftar skill setelah penghapusan
       setSkills(prevSkills => {
         const updatedSkills = prevSkills.filter(skill => skill.id !== id);
         
-        // Recalculate orders
+        // Hitung ulang urutan (opsional, karena pemuatan ulang akan melakukan ini)
         return updatedSkills.map((skill, index) => ({
           ...skill,
           order: index
         }));
       });
 
-      setOrderChanged(true);
+      setOrderChanged(true); // Menunjukkan bahwa urutan mungkin telah berubah
+      toast.success('Skill deleted successfully!');
+      fetchSkills(); // Muat ulang untuk memastikan konsistensi
     } catch (err) {
       console.error('Error deleting skill:', err);
       setError(err.message || 'Failed to delete skill. Please try again.');
+      toast.error('Failed to delete skill');
     } finally {
       setIsDeleting(false);
       setDeleteSkill(null);
@@ -338,6 +401,29 @@ export default function SkillsIndexPage() {
           </div>
         )}
 
+        {/* Tombol Filter */}
+        <div className="mb-6 flex space-x-3">
+          <button
+            onClick={() => setFilter('active')}
+            className={`px-4 py-2 rounded-lg transition-colors ${filter === 'active' ? 'bg-sky-600 text-white' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}`}
+          >
+            Active Skills
+          </button>
+          <button
+            onClick={() => setFilter('archived')}
+            className={`px-4 py-2 rounded-lg transition-colors ${filter === 'archived' ? 'bg-sky-600 text-white' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}`}
+          >
+            Archived Skills
+          </button>
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all' ? 'bg-sky-600 text-white' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}`}
+          >
+            All Skills
+          </button>
+        </div>
+
+
         {skills.length === 0 && !loading ? (
           <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-8 text-center">
             <div className="flex justify-center mb-4">
@@ -376,14 +462,15 @@ export default function SkillsIndexPage() {
                   skill={skill}
                   index={index}
                   moveSkill={moveSkill}
-                  handleDeleteClick={setDeleteSkill}
+                  handleDeleteClick={setDeleteSkill} // Masih menggunakan setDeleteSkill untuk modal
+                  handleToggleArchive={handleToggleArchive}
                 />
               </div>
             ))}
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
+        {/* Modal Konfirmasi Hapus */}
         {deleteSkill && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fadeIn">
             <div className="bg-zinc-800 rounded-xl p-6 max-w-md w-full m-4 animate-scaleIn">
@@ -418,7 +505,7 @@ export default function SkillsIndexPage() {
         )}
       </div>
 
-      {/* Add global styles for animations */}
+      {/* Tambahkan gaya global untuk animasi */}
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; }

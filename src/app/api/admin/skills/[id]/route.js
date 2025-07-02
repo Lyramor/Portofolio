@@ -20,7 +20,7 @@ async function verifyAuth(request) {
   }
 }
 
-// GET: Mengambil satu skill berdasarkan ID
+// GET: Mengambil satu skill berdasarkan ID (Tidak ada perubahan)
 export async function GET(request, { params }) {
   try {
     const authResult = await verifyAuth(request);
@@ -52,8 +52,9 @@ export async function PUT(request, { params }) {
     }
 
     const { id } = params;
-    const body = await request.json(); // Data dikirim sebagai JSON (bukan FormData) untuk PUT skill
-    const { label, imgSrc, description } = body;
+    // Tambahkan 'archived' ke sini
+    const body = await request.json(); 
+    const { label, imgSrc, description, archived } = body;
 
     // Validasi dasar
     if (!label || label.trim() === '') {
@@ -66,18 +67,16 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
     }
 
-    // Catatan: Jika ada pengunggahan file, itu harus ditangani oleh endpoint /api/admin/upload terpisah
-    // dan imgSrc harus dikirim sebagai URL gambar yang sudah diunggah.
-    // Logika di frontend (page.jsx) sudah melakukan ini.
-
+    // Perbarui skill di database, termasuk status archived
     await query(
-      'UPDATE skills SET label = ?, imgSrc = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [label, imgSrc || null, description || null, id]
+      'UPDATE skills SET label = ?, imgSrc = ?, description = ?, archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [label, imgSrc || null, description || null, archived, id] // Perbarui kolom 'archived'
     );
 
     // Revalidate the page cache jika diperlukan
     revalidatePath('/lyramor/skills');
     revalidatePath('/lyramor'); // Dashboard juga mungkin menampilkan skill
+    revalidatePath('/api/skills'); // Revalidate API publik agar perubahan terlihat
 
     return NextResponse.json({ success: true, message: 'Skill updated successfully' });
   } catch (error) {
@@ -86,7 +85,7 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE: Menghapus satu skill berdasarkan ID
+// DELETE: Menghapus satu skill berdasarkan ID (Tidak ada perubahan)
 export async function DELETE(request, { params }) {
   try {
     const authResult = await verifyAuth(request);
@@ -123,6 +122,7 @@ export async function DELETE(request, { params }) {
     // Revalidate the page cache
     revalidatePath('/lyramor/skills');
     revalidatePath('/lyramor'); // Dashboard juga mungkin menampilkan skill
+    revalidatePath('/api/skills'); // Revalidate API publik agar perubahan terlihat
 
     return NextResponse.json({ success: true, message: 'Skill deleted successfully' });
   } catch (error) {

@@ -3,6 +3,7 @@ import { query } from '@/lib/db';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
+import { revalidatePath } from 'next/cache'; // Import revalidatePath
 
 export async function DELETE(request) {
   try {
@@ -28,6 +29,11 @@ export async function DELETE(request) {
     
     await query('DELETE FROM experience WHERE id = ?', [id]);
     
+    // Revalidate paths setelah delete
+    revalidatePath('/lyramor/experience'); // Untuk halaman admin experience
+    revalidatePath('/api/experiences'); // Untuk API publik yang digunakan di halaman utama
+    revalidatePath('/'); // Untuk halaman utama jika menampilkan pengalaman langsung
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting experience:', error);
