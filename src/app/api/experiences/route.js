@@ -14,10 +14,21 @@ export async function GET() {
       technologies: exp.skills ? exp.skills.map(skill => skill.label) : []
     }));
 
-    // Mengembalikan data pengalaman yang sudah diformat
-    return NextResponse.json(formattedExperiences);
+    // Tambahkan header Cache-Control untuk caching di halaman utama
+    return new NextResponse(JSON.stringify(formattedExperiences), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=60', // Cache selama 5 menit
+      },
+    });
   } catch (error) {
     console.error('Error fetching public experiences:', error);
-    return NextResponse.json({ error: 'Failed to fetch experiences' }, { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 }

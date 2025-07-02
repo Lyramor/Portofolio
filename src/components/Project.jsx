@@ -24,12 +24,22 @@ export default function Project() {
         const res = await fetch('/api/projects'); 
 
         if (!res.ok) {
-          throw new Error('Failed to fetch project data');
+          // Tangani respons non-OK (misalnya, status 500)
+          const errorData = await res.json();
+          throw new Error(errorData.error || 'Failed to fetch project data');
         }
 
         // Parse respons JSON
         const data = await res.json();
-        setProjectData(data); 
+        
+        // Pastikan data adalah array sebelum menyimpannya ke state
+        if (Array.isArray(data)) {
+          setProjectData(data); 
+        } else {
+          // Jika data bukan array, log error dan set error state
+          console.error('API /api/projects returned non-array data:', data);
+          throw new Error('Invalid data format received from server.');
+        }
       } catch (err) {
         console.error('Error fetching projects:', err);
         setError('Failed to load projects. Please try again later.');
@@ -72,7 +82,8 @@ export default function Project() {
   }
 
   // Tampilkan pesan jika tidak ada data proyek ditemukan
-  if (projectData.length === 0) {
+  // Pemeriksaan ini sekarang lebih aman karena kita sudah memastikan projectData adalah array
+  if (projectData.length === 0) { 
     return (
       <section 
         id="project" 

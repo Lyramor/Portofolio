@@ -9,9 +9,21 @@ export async function GET() {
     const counterResult = await query('SELECT number FROM counter_projects LIMIT 1');
     const number = counterResult.length > 0 ? counterResult[0].number : 0;
     
-    return NextResponse.json({ number });
+    // Tambahkan header Cache-Control untuk caching di halaman utama
+    return new NextResponse(JSON.stringify({ number }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=60', // Cache selama 5 menit
+      },
+    });
   } catch (error) {
     console.error('Error retrieving public project counter:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 }
