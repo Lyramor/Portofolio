@@ -1,5 +1,6 @@
 // src/lib/auth.js
 import { query } from './db';
+import { cookies } from 'next/headers'; 
 
 /**
  * Get the current authenticated user from session token
@@ -91,6 +92,15 @@ export function sanitizeInput(text) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Get current user - alias for getSessionUser
+ * @param {Object} cookieStore - Next.js cookies store
+ * @returns {Promise<Object|null>} User object or null if not authenticated
+ */
+export async function getCurrentUser(cookieStore) {
+  return await getSessionUser(cookieStore);
 }
 
 export async function POST() {
