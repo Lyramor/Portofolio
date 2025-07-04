@@ -1,6 +1,7 @@
 // src/app/api/skills/route.js
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db'; // Mengambil fungsi query dari db.js
+import { query } from '@/lib/db'; 
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {

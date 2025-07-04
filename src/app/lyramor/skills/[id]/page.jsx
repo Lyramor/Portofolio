@@ -1,8 +1,9 @@
-'use client';
 // src/app/lyramor/skills/[id]/page.jsx - Updated with image upload and archive feature
+'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image'; // Tambahkan ini
 import { 
   FiCode, 
   FiSave, 
@@ -11,9 +12,9 @@ import {
   FiAlertCircle,
   FiUpload,
   FiImage,
-  FiTrash2 // Import FiTrash2 for clear image button
+  FiTrash2
 } from 'react-icons/fi';
-import { toast } from 'react-hot-toast'; // Import toast for notifications
+import { toast } from 'react-hot-toast';
 
 export default function EditSkillPage({ params }) {
   const router = useRouter();
@@ -25,9 +26,10 @@ export default function EditSkillPage({ params }) {
     description: '',
   });
   const [imageFile, setImageFile] = useState(null);
+  const [currentImage, setCurrentImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [uploadOption, setUploadOption] = useState('url'); // 'url' or 'upload'
-  const [archived, setArchived] = useState(false); // New state for archived status
+  const [uploadOption, setUploadOption] = useState('url');
+  const [archived, setArchived] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,12 +50,11 @@ export default function EditSkillPage({ params }) {
           imgSrc: data.imgSrc || '',
           description: data.description || '',
         });
-        setArchived(data.archived === 1); // Set archived status (database stores as 0 or 1)
+        setArchived(data.archived === 1);
         
-        // Set image preview if imgSrc exists
         if (data.imgSrc) {
+          setCurrentImage(data.imgSrc);
           setImagePreview(data.imgSrc);
-          // Set upload option based on whether it's a local upload path or external URL
           if (data.imgSrc.startsWith('/uploads/skills/')) {
             setUploadOption('upload');
           } else {
@@ -61,7 +62,7 @@ export default function EditSkillPage({ params }) {
           }
         } else {
           setImagePreview(null);
-          setUploadOption('url'); // Default to URL if no image
+          setUploadOption('url');
         }
       } catch (err) {
         console.error('Error fetching skill:', err);
@@ -86,7 +87,6 @@ export default function EditSkillPage({ params }) {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) {
-      // If no file selected (e.g., dialog cancelled), revert preview to current image if any
       setImageFile(null);
       setImagePreview(formData.imgSrc); 
       setError(null);
@@ -95,7 +95,6 @@ export default function EditSkillPage({ params }) {
 
     setError(null); 
 
-    // Check file type
     if (!file.type.includes('image/')) {
       setError('Please select an image file (JPG, PNG, SVG, etc.).');
       setImageFile(null);
@@ -103,7 +102,6 @@ export default function EditSkillPage({ params }) {
       return;
     }
 
-    // Check file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       setError('Image size should be less than 2MB.');
       setImageFile(null);
@@ -113,7 +111,6 @@ export default function EditSkillPage({ params }) {
 
     setImageFile(file);
     
-    // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target.result);
@@ -124,16 +121,16 @@ export default function EditSkillPage({ params }) {
   const handleClearImage = () => {
     setImageFile(null);
     setImagePreview(null);
-    setFormData(prev => ({ ...prev, imgSrc: '' })); // Clear the imgSrc in form data
-    setError(null); 
+    setFormData(prev => ({ ...prev, imgSrc: '' }));
+    setError(null);
   };
 
   const handleUploadOptionChange = (option) => {
     setUploadOption(option);
-    setImageFile(null); // Reset file when option changes
-    setImagePreview(null); // Reset preview when option changes
-    setFormData(prev => ({ ...prev, imgSrc: '' })); // Reset URL when option changes
-    setError(null); // Reset error
+    setImageFile(null);
+    setImagePreview(null);
+    setFormData(prev => ({ ...prev, imgSrc: '' }));
+    setError(null);
   };
 
   const handleSubmit = async (e) => {
@@ -141,7 +138,6 @@ export default function EditSkillPage({ params }) {
     setError(null);
     setSaving(true);
 
-    // Basic validation
     if (!formData.label.trim()) {
       setError('Skill name is required');
       setSaving(false);
@@ -151,7 +147,6 @@ export default function EditSkillPage({ params }) {
     try {
       let finalImgSrc = formData.imgSrc;
 
-      // If using file upload, upload the image first
       if (uploadOption === 'upload') {
         if (imageFile) {
           const imageFormData = new FormData();
@@ -170,14 +165,10 @@ export default function EditSkillPage({ params }) {
           const imageData = await uploadRes.json();
           finalImgSrc = imageData.imageUrl;
         } else {
-          // If upload option chosen but no new file, and no current image, set to null
-          // This handles cases where user clears an uploaded image
           finalImgSrc = null; 
         }
       }
-      // If uploadOption is 'url' and imgSrc is empty, finalImgSrc will be empty string, which is fine.
 
-      // Update the skill with the image URL and archived status
       const res = await fetch(`/api/admin/skills/${id}`, {
         method: 'PUT',
         headers: {
@@ -187,7 +178,7 @@ export default function EditSkillPage({ params }) {
           label: formData.label,
           description: formData.description,
           imgSrc: finalImgSrc,
-          archived: archived, // Send the archived status
+          archived: archived,
         }),
       });
 
@@ -197,9 +188,8 @@ export default function EditSkillPage({ params }) {
       }
 
       toast.success('Skill updated successfully!');
-      // Redirect back to skills list after successful update
       router.push('/lyramor/skills');
-      router.refresh(); // Refresh data on the skills list page
+      router.refresh();
     } catch (err) {
       console.error('Error updating skill:', err);
       setError(err.message || 'Failed to update skill. Please try again.');
@@ -289,16 +279,13 @@ export default function EditSkillPage({ params }) {
                   Enter the URL of the skill icon or logo (SVG recommended).
                 </p>
                 {formData.imgSrc && (
-                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center">
-                    <img 
+                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center relative"> {/* Tambahkan relative */}
+                    <Image // Ganti <img>
                       src={formData.imgSrc} 
                       alt="Image URL Preview" 
-                      className="max-h-24 object-contain" 
-                      onError={(e) => { 
-                        e.target.onerror = null; 
-                        e.target.src="/images/skills/default.svg"; // Fallback to default image
-                        e.target.classList.add('p-4'); // Add padding if fallback
-                      }}
+                      fill // Gunakan fill
+                      style={{ objectFit: 'contain' }} // Atur objectFit
+                      // onError tidak perlu lagi
                     />
                   </div>
                 )}
@@ -309,15 +296,16 @@ export default function EditSkillPage({ params }) {
                   Upload Image
                 </label>
                 <div className="mt-1 flex items-center">
-                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative">
+                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative"> {/* Tambahkan relative */}
                     {imagePreview ? (
                       <div className="w-full flex flex-col items-center">
-                        <img 
+                        <Image // Ganti <img>
                           src={imagePreview} 
                           alt="Upload Preview" 
-                          className="h-32 object-contain mb-4" 
+                          fill // Gunakan fill
+                          style={{ objectFit: 'contain' }} // Atur objectFit
                         />
-                        <span className="text-sm">Click to change image</span>
+                        <span className="mt-2 text-base">Click to change image</span>
                       </div>
                     ) : (
                       <>
@@ -332,7 +320,7 @@ export default function EditSkillPage({ params }) {
                       accept="image/*"
                       onChange={handleFileChange}
                     />
-                    {(imagePreview || formData.imgSrc) && ( // Show clear button if there's any image (new or existing URL)
+                    {(imagePreview || formData.imgSrc) && (
                         <button
                             type="button"
                             onClick={handleClearImage}
@@ -366,7 +354,6 @@ export default function EditSkillPage({ params }) {
             />
           </div>
 
-          {/* New: Archived Toggle */}
           <div className="mb-6 flex items-center">
             <input
               type="checkbox"

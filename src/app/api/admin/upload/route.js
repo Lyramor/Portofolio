@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid'; // Pastikan untuk menginstal uuid dengan npm
 import { mkdir } from 'fs/promises';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {

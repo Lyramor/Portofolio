@@ -1,8 +1,9 @@
-'use client';
 // src/app/lyramor/skills/new/edit/page.jsx
+'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image'; // Tambahkan ini
 import { 
   FiCode, 
   FiSave, 
@@ -18,11 +19,11 @@ export default function NewSkillPage() {
   const [formData, setFormData] = useState({
     label: '',
     description: '',
-    imgSrc: '', // Untuk URL gambar
+    imgSrc: '',
   });
-  const [imageFile, setImageFile] = useState(null); // Untuk file gambar yang diunggah
-  const [imagePreview, setImagePreview] = useState(null); // Untuk pratinjau gambar
-  const [uploadOption, setUploadOption] = useState('url'); // 'url' atau 'upload'
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadOption, setUploadOption] = useState('url');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -44,9 +45,8 @@ export default function NewSkillPage() {
       return;
     }
 
-    setError(null); // Reset error saat file baru dipilih
+    setError(null);
 
-    // Periksa tipe file
     if (!file.type.includes('image/')) {
       setError('Harap pilih file gambar (JPG, PNG, SVG, dll.).');
       setImageFile(null);
@@ -54,7 +54,6 @@ export default function NewSkillPage() {
       return;
     }
 
-    // Periksa ukuran file (maks 2MB)
     if (file.size > 2 * 1024 * 1024) {
       setError('Ukuran gambar harus kurang dari 2MB.');
       setImageFile(null);
@@ -64,7 +63,6 @@ export default function NewSkillPage() {
 
     setImageFile(file);
     
-    // Buat pratinjau gambar
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target.result);
@@ -75,15 +73,15 @@ export default function NewSkillPage() {
   const handleClearImage = () => {
     setImageFile(null);
     setImagePreview(null);
-    setError(null); 
+    setError(null);
   };
 
   const handleUploadOptionChange = (option) => {
     setUploadOption(option);
-    setImageFile(null); // Reset file saat opsi berubah
-    setImagePreview(null); // Reset pratinjau saat opsi berubah
-    setFormData(prev => ({ ...prev, imgSrc: '' })); // Reset URL saat opsi berubah
-    setError(null); // Reset error
+    setImageFile(null);
+    setImagePreview(null);
+    setFormData(prev => ({ ...prev, imgSrc: '' }));
+    setError(null);
   };
 
   const handleSubmit = async (e) => {
@@ -91,7 +89,6 @@ export default function NewSkillPage() {
     setSaving(true);
     setError(null);
 
-    // Validasi dasar
     if (!formData.label.trim()) {
       setError('Nama skill wajib diisi.');
       setSaving(false);
@@ -99,15 +96,13 @@ export default function NewSkillPage() {
     }
 
     try {
-      let finalImgSrc = formData.imgSrc; // Default ke URL jika opsi 'url'
+      let finalImgSrc = formData.imgSrc;
 
-      // Jika opsi upload file dan ada file yang dipilih
       if (uploadOption === 'upload' && imageFile) {
         const imageFormData = new FormData();
         imageFormData.append('image', imageFile);
 
-        // Upload gambar ke API upload
-        const uploadRes = await fetch('/api/admin/upload', { // Menggunakan API upload yang sudah ada
+        const uploadRes = await fetch('/api/admin/upload', {
           method: 'POST',
           body: imageFormData,
         });
@@ -118,14 +113,12 @@ export default function NewSkillPage() {
         }
 
         const imageData = await uploadRes.json();
-        finalImgSrc = imageData.imageUrl; // Dapatkan URL gambar yang diunggah
+        finalImgSrc = imageData.imageUrl;
       } else if (uploadOption === 'upload' && !imageFile) {
-        // Jika opsi upload tapi tidak ada file, set imgSrc menjadi null atau string kosong
         finalImgSrc = null;
       }
 
-      // Kirim data skill ke API
-      const res = await fetch('/api/admin/skills', { // Menggunakan API skill untuk membuat skill baru
+      const res = await fetch('/api/admin/skills', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +126,7 @@ export default function NewSkillPage() {
         body: JSON.stringify({
           label: formData.label,
           description: formData.description,
-          imgSrc: finalImgSrc, // Gunakan URL gambar yang sudah diunggah/dimasukkan
+          imgSrc: finalImgSrc,
         }),
       });
 
@@ -142,9 +135,8 @@ export default function NewSkillPage() {
         throw new Error(errorData.error || 'Gagal membuat skill baru.');
       }
 
-      // Redirect ke halaman daftar skill setelah berhasil
       router.push('/lyramor/skills');
-      router.refresh(); // Opsional: refresh data di halaman tujuan
+      router.refresh();
     } catch (err) {
       console.error('Error creating skill:', err);
       setError(err.message || 'Gagal membuat skill. Silakan coba lagi.');
@@ -225,15 +217,16 @@ export default function NewSkillPage() {
                   Masukkan URL ikon atau logo skill (direkomendasikan SVG).
                 </p>
                 {formData.imgSrc && (
-                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center">
-                    <img 
+                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center relative"> {/* Tambahkan relative di sini */}
+                    <Image // Ganti <img>
                       src={formData.imgSrc} 
                       alt="Pratinjau URL Gambar" 
-                      className="max-h-24 object-contain" 
+                      fill // Gunakan fill
+                      style={{ objectFit: 'contain' }} // Atur objectFit
                       onError={(e) => { 
-                        e.target.onerror = null; 
-                        e.target.src="/images/skills/default.svg"; // Fallback ke gambar default
-                        e.target.classList.add('p-4'); // Tambahkan padding jika fallback
+                        // next/image tidak menggunakan onError seperti tag <img>,
+                        // Anda perlu menangani fallback di komponen pembungkus
+                        // atau menyediakan gambar fallback secara langsung di src
                       }}
                     />
                   </div>
@@ -245,15 +238,16 @@ export default function NewSkillPage() {
                   Unggah Gambar
                 </label>
                 <div className="mt-1 flex items-center">
-                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative">
+                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative"> {/* Tambahkan relative di sini */}
                     {imagePreview ? (
                       <div className="w-full flex flex-col items-center">
-                        <img 
+                        <Image // Ganti <img>
                           src={imagePreview} 
                           alt="Pratinjau Unggahan" 
-                          className="h-32 object-contain mb-4" 
+                          fill // Gunakan fill
+                          style={{ objectFit: 'contain' }} // Atur objectFit
                         />
-                        <span className="text-sm">Klik untuk mengubah gambar</span>
+                        <span className="mt-2 text-base">Klik untuk mengubah gambar</span>
                       </div>
                     ) : (
                       <>

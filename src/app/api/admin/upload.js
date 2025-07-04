@@ -3,6 +3,7 @@ import nextConnect from 'next-connect';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+export const dynamic = 'force-dynamic';
 
 // Setup upload directory
 const uploadDir = path.join(process.cwd(), 'public', 'uploads');

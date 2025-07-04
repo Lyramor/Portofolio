@@ -147,3 +147,5 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
 }
+
+export const dynamic = 'force-dynamic';

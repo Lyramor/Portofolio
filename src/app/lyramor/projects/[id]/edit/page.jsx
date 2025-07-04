@@ -1,9 +1,10 @@
-'use client';
 // src/app/lyramor/projects/[id]/edit/page.jsx
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image'; // Tambahkan ini
 import { 
   FiBriefcase, 
   FiSave, 
@@ -12,11 +13,11 @@ import {
   FiAlertCircle,
   FiUpload,
   FiTag,
-  FiLink, // Untuk ikon link
-  FiTrash2 // Untuk tombol hapus gambar
+  FiLink,
+  FiTrash2
 } from 'react-icons/fi';
 import SkillsSelector from '@/components/admin/SkillsSelector';
-import { toast } from 'react-hot-toast'; // Untuk notifikasi
+import { toast } from 'react-hot-toast';
 
 export default function EditProjectPage({ params }) {
   const router = useRouter();
@@ -25,19 +26,18 @@ export default function EditProjectPage({ params }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    link: '', // Tambahkan state untuk link
+    link: '',
   });
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [imageFile, setImageFile] = useState(null);
-  const [currentImage, setCurrentImage] = useState(null); // Gambar yang sudah ada di database
-  const [imagePreview, setImagePreview] = useState(null); // Pratinjau untuk gambar baru/lama
-  const [archived, setArchived] = useState(false); // New state for archived status
-  const [order, setOrder] = useState(0); // New state for project order
+  const [currentImage, setCurrentImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [archived, setArchived] = useState(false);
+  const [order, setOrder] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch project data
   useEffect(() => {
     const fetchProject = async () => {
       try {
@@ -54,19 +54,18 @@ export default function EditProjectPage({ params }) {
         setFormData({
           title: project.title || '',
           description: project.description || '',
-          link: project.link || '', // Muat link dari database
+          link: project.link || '',
         });
-        setArchived(project.archived === 1); // Muat status archived
-        setOrder(project.order || 0); // Muat order
+        setArchived(project.archived === 1);
+        setOrder(project.order || 0);
 
         if (project.skills) {
           setSelectedSkills(project.skills.map(skill => skill.id));
         }
         
-        // Atur currentImage dan imagePreview
         if (project.image) {
           setCurrentImage(project.image);
-          setImagePreview(project.image); // Tampilkan gambar yang sudah ada sebagai pratinjau awal
+          setImagePreview(project.image);
         } else {
             setCurrentImage(null);
             setImagePreview(null);
@@ -99,10 +98,8 @@ export default function EditProjectPage({ params }) {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) {
-      // Jika tidak ada file yang dipilih (misal: dialog file dibatalkan),
-      // kita mungkin ingin mengembalikan pratinjau ke gambar yang sudah ada.
       setImageFile(null);
-      setImagePreview(currentImage); // Kembali ke currentImage jika ada
+      setImagePreview(currentImage);
       setError(null);
       return;
     }
@@ -112,14 +109,14 @@ export default function EditProjectPage({ params }) {
     if (!file.type.includes('image/')) {
       setError('Please select an image file.');
       setImageFile(null);
-      setImagePreview(currentImage); // Kembali ke currentImage
+      setImagePreview(currentImage);
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
       setError('Image size should be less than 2MB.');
       setImageFile(null);
-      setImagePreview(currentImage); // Kembali ke currentImage
+      setImagePreview(currentImage);
       return;
     }
 
@@ -127,16 +124,16 @@ export default function EditProjectPage({ params }) {
     
     const reader = new FileReader();
     reader.onload = (e) => {
-      setImagePreview(e.target.result); // Set pratinjau ke gambar baru
+      setImagePreview(e.target.result);
     };
     reader.readAsDataURL(file);
   };
 
   const handleClearImage = () => {
-    setImageFile(null); // Clear file yang akan diunggah
-    setCurrentImage(null); // Clear gambar yang saat ini ada
-    setImagePreview(null); // Clear pratinjau
-    setError(null); // Clear any related error messages
+    setImageFile(null);
+    setCurrentImage(null);
+    setImagePreview(null);
+    setError(null);
   };
 
 
@@ -155,21 +152,17 @@ export default function EditProjectPage({ params }) {
       const formDataToSubmit = new FormData();
       formDataToSubmit.append('title', formData.title);
       formDataToSubmit.append('description', formData.description);
-      formDataToSubmit.append('link', formData.link); // Kirim data link
-      formDataToSubmit.append('order', order); // Kirim data order
-      formDataToSubmit.append('archived', archived ? 'true' : 'false'); // Kirim data archived sebagai string
+      formDataToSubmit.append('link', formData.link);
+      formDataToSubmit.append('order', order);
+      formDataToSubmit.append('archived', archived ? 'true' : 'false');
 
       formDataToSubmit.append('skills', JSON.stringify(selectedSkills));
       
-      // Logika untuk mengirim gambar
       if (imageFile) {
         formDataToSubmit.append('image', imageFile);
       } else if (currentImage && !imagePreview) {
-        // Jika tidak ada file baru dipilih DAN gambar lama sudah dihapus dari preview
-        // Ini menandakan pengguna ingin menghapus gambar yang ada
-        formDataToSubmit.append('image_cleared', 'true'); // Sinyal untuk menghapus gambar
+        formDataToSubmit.append('image_cleared', 'true');
       } else if (!currentImage && !imagePreview && !imageFile) {
-        // Jika tidak ada gambar sama sekali (baru atau lama), pastikan backend mengosongkan path
         formDataToSubmit.append('image_cleared', 'true');
       }
 
@@ -253,12 +246,11 @@ export default function EditProjectPage({ params }) {
               value={formData.description}
               onChange={handleChange}
               rows="4"
-              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
               placeholder="Brief description of your project"
             />
           </div>
 
-          {/* Project Link field */}
           <div className="mb-6">
             <label htmlFor="link" className="block text-sm font-medium text-zinc-300 mb-2 flex items-center">
               <FiLink className="mr-2" size={16} />
@@ -281,13 +273,14 @@ export default function EditProjectPage({ params }) {
               Project Image
             </label>
             <div className="mt-1 flex flex-col items-center">
-              <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative">
+              <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative"> {/* Tambahkan relative di sini */}
                 {imagePreview ? (
                   <div className="w-full flex flex-col items-center">
-                    <img 
+                    <Image // Ganti <img>
                       src={imagePreview} 
                       alt="Preview" 
-                      className="h-32 object-contain" 
+                      fill // Gunakan fill
+                      style={{ objectFit: 'contain' }} // Atur objectFit
                     />
                     <span className="mt-4 text-sm">Click to change image</span>
                   </div>
@@ -304,7 +297,7 @@ export default function EditProjectPage({ params }) {
                   accept="image/*"
                   onChange={handleFileChange}
                 />
-                {(imagePreview || currentImage) && ( // Tampilkan tombol clear jika ada gambar (baru atau lama)
+                {(imagePreview || currentImage) && (
                     <button
                         type="button"
                         onClick={handleClearImage}
@@ -332,7 +325,6 @@ export default function EditProjectPage({ params }) {
             />
           </div>
 
-          {/* New: Project Order */}
           <div className="mb-6">
             <label htmlFor="order" className="block text-sm font-medium text-zinc-300 mb-2">
               Display Order
@@ -351,7 +343,6 @@ export default function EditProjectPage({ params }) {
             </p>
           </div>
 
-          {/* New: Archived Toggle */}
           <div className="mb-6 flex items-center">
             <input
               type="checkbox"

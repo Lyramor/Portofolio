@@ -23,3 +23,5 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to get skills list' }, { status: 500 });
   }
 }
+
+export const dynamic = 'force-dynamic';

@@ -17,14 +17,14 @@ function cn(...classes) {
 const RotatingText = forwardRef((props, ref) => {
   const {
     texts,
-    transition = { type: "spring", damping: 25, stiffness: 300 },
+    transition = { type: "spring", damping: 25, stiffness: 300 }, // Sedikit lebih lembut
     initial = { y: "100%", opacity: 0 },
     animate = { y: 0, opacity: 1 },
     exit = { y: "-120%", opacity: 0 },
     animatePresenceMode = "wait",
     animatePresenceInitial = false,
-    rotationInterval = 2000,
-    staggerDuration = 0,
+    rotationInterval = 3000, // Interval rotasi lebih lama (3 detik)
+    staggerDuration = 0.015, // Durasi stagger lebih pendek
     staggerFrom = "first",
     loop = true,
     auto = true,
@@ -167,7 +167,7 @@ const RotatingText = forwardRef((props, ref) => {
       layout
       transition={transition}
     >
-      {/* Screen-reader only text */}
+      {/* Teks hanya untuk pembaca layar */}
       <span className="sr-only">{texts[currentTextIndex]}</span>
       <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
         <motion.div

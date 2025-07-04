@@ -1,12 +1,12 @@
-'use client';
 // src/app/lyramor/projects/page.jsx
-import { useState, useEffect, useRef } from 'react'; // Import useRef
+'use client';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image'; 
+import Image from 'next/image'; // Tambahkan ini
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { GripVertical } from 'lucide-react'; // Untuk ikon drag handle
-import { toast } from 'react-hot-toast'; // Untuk notifikasi
+import { GripVertical } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 import { 
   FiBriefcase, 
@@ -18,13 +18,12 @@ import {
   FiImage,
   FiTag,
   FiCalendar,
-  FiLink as LinkIcon, // Mengganti nama FiLink agar tidak konflik dengan Link dari next/link
-  FiMove, // Untuk tombol save order
-  FiEye, // Untuk unarchive
-  FiEyeOff // Untuk archive
+  FiLink as LinkIcon,
+  FiMove,
+  FiEye,
+  FiEyeOff
 } from 'react-icons/fi';
 
-// Fungsi formatDate dipindahkan ke luar komponen utama agar dapat diakses oleh ProjectItem
 const formatDate = (dateString) => {
   if (!dateString) return 'Unknown'; 
   try {
@@ -38,7 +37,6 @@ const formatDate = (dateString) => {
   }
 };
 
-// Komponen Project Item yang dapat di-drag
 const ProjectItem = ({ project, index, moveProject, confirmDelete, handleToggleArchive }) => {
   const ref = useRef(null);
   
@@ -52,52 +50,19 @@ const ProjectItem = ({ project, index, moveProject, confirmDelete, handleToggleA
 
   const [, drop] = useDrop({
     accept: 'PROJECT',
-    hover: (item, monitor) => {
+    hover: (item) => { // monitor tidak dipakai, bisa dihapus
       if (!ref.current) {
         return;
       }
       
-      const dragIndex = item.index; // Perbaiki: Gunakan item.index
+      const dragIndex = item.index;
       const hoverIndex = index;
       
-      // Don't replace items with themselves
       if (dragIndex === hoverIndex) {
         return;
       }
       
-      // Determine rectangle on screen
-      const hoverBoundingRect = ref.current.getBoundingClientRect();
-      
-      // Get vertical middle
-      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      
-      // Determine mouse position
-      const clientOffset = monitor.getClientOffset();
-      
-      // Get pixels to the top
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-      
-      // Only perform the move when the mouse has crossed half of the items height
-      // When dragging downwards, only move when the cursor is below 50%
-      // When dragging upwards, only move when the cursor is above 50%
-      
-      // Dragging downwards
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-        return;
-      }
-      
-      // Dragging upwards
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-        return;
-      }
-      
-      // Time to actually perform the action
       moveProject(dragIndex, hoverIndex);
-      
-      // Note: we're mutating the monitor item here!
-      // Generally it's better to avoid mutations,
-      // but it's good here for the sake of performance
-      // to avoid expensive index searches.
       item.index = hoverIndex;
     },
   });
@@ -116,7 +81,6 @@ const ProjectItem = ({ project, index, moveProject, confirmDelete, handleToggleA
   return (
     <div ref={ref} className={cardStyle}>
       <div className="flex items-start gap-4"> 
-        {/* Drag Handle */}
         <div 
           ref={dragHandle}
           className="flex-shrink-0 mr-3 cursor-move text-zinc-500 hover:text-zinc-300 p-1 rounded hover:bg-zinc-700 active:bg-zinc-600"
@@ -124,17 +88,15 @@ const ProjectItem = ({ project, index, moveProject, confirmDelete, handleToggleA
           <GripVertical size={20} />
         </div>
 
-        {/* Project Image */}
         <div className="flex-shrink-0"> 
           {project.image ? ( 
-            <img 
+            <Image // Ganti <img>
               src={project.image} 
               alt={project.title}
-              className={`w-20 h-20 object-cover rounded-lg ${project.archived ? 'grayscale' : ''}`}
-              onError={(e) => { 
-                e.target.onerror = null;
-                e.target.src = '/images/default_project_image.png'; // Fallback image
-              }}
+              width={80} // w-20/h-20 setara 80px/80px
+              height={80} // w-20/h-20 setara 80px/80px
+              className={`object-cover rounded-lg ${project.archived ? 'grayscale' : ''}`}
+              // onError pada Image tidak perlu karena next/image menangani fallback
             />
           ) : (
             <div className={`w-20 h-20 bg-zinc-700 rounded-lg flex items-center justify-center ${project.archived ? 'grayscale' : ''}`}> 
@@ -143,7 +105,6 @@ const ProjectItem = ({ project, index, moveProject, confirmDelete, handleToggleA
           )} 
         </div>
 
-        {/* Project Info */}
         <div className="flex-1 min-w-0"> 
           <h3 className="text-lg font-semibold text-white mb-2">
             {project.title} {project.archived && <span className="text-sm text-zinc-600">(Archived)</span>}
@@ -152,7 +113,6 @@ const ProjectItem = ({ project, index, moveProject, confirmDelete, handleToggleA
             <p className="text-zinc-400 mb-3 line-clamp-2">{project.description}</p> 
           )}
 
-          {/* Skills */}
           {project.skill_labels && project.skill_labels.length > 0 && ( 
             <div className="flex items-center gap-2 mb-3"> 
               <FiTag className="text-zinc-500" size={14} /> 
@@ -169,7 +129,6 @@ const ProjectItem = ({ project, index, moveProject, confirmDelete, handleToggleA
             </div>
           )}
 
-          {/* Project Link */}
           {project.link && (
             <div className="flex items-center text-zinc-500 text-sm mb-1">
               <LinkIcon className="mr-1" size={14} />
@@ -184,14 +143,12 @@ const ProjectItem = ({ project, index, moveProject, confirmDelete, handleToggleA
             </div>
           )}
 
-          {/* Created Date */}
           <div className="flex items-center text-zinc-500 text-sm"> 
             <FiCalendar className="mr-1" size={14} /> 
             <span>Created: {formatDate(project.created_at)}</span> 
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2"> 
           <button
             onClick={() => handleToggleArchive(project, !project.archived)}
@@ -233,15 +190,11 @@ export default function ProjectsPage() {
   const [deleteTitle, setDeleteTitle] = useState(''); 
   const [isDeleting, setIsDeleting] = useState(false); 
   const [showDeleteModal, setShowDeleteModal] = useState(false); 
-  const [orderChanged, setOrderChanged] = useState(false); // State untuk melacak perubahan urutan
-  const [isSavingOrder, setIsSavingOrder] = useState(false); // State untuk loading tombol save
-  const [filter, setFilter] = useState('active'); // 'active', 'archived', 'all'
+  const [orderChanged, setOrderChanged] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [filter, setFilter] = useState('active');
 
-  useEffect(() => {
-    fetchProjects();
-  }, [filter]); // Muat ulang proyek saat filter berubah
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -253,7 +206,6 @@ export default function ProjectsPage() {
       }
       
       const data = await res.json();
-      // Pastikan data memiliki properti 'order' dan urutkan di frontend juga
       const projectsWithOrder = data.map((project, index) => ({
         ...project,
         order: project.order !== undefined ? project.order : index
@@ -269,7 +221,11 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   const moveProject = (dragIndex, hoverIndex) => {
     setProjects(prevProjects => {
@@ -277,13 +233,12 @@ export default function ProjectsPage() {
       const [movedProject] = updatedProjects.splice(dragIndex, 1);
       updatedProjects.splice(hoverIndex, 0, movedProject);
       
-      // Perbarui properti order untuk mencerminkan urutan baru di state lokal
       return updatedProjects.map((project, index) => ({
         ...project,
         order: index
       }));
     });
-    setOrderChanged(true); // Set orderChanged menjadi true
+    setOrderChanged(true);
   };
 
   const saveProjectOrder = async () => {
@@ -291,7 +246,7 @@ export default function ProjectsPage() {
     setError(null);
     try {
       const res = await fetch('/api/admin/projects/reorder', {
-        method: 'PUT', // Menggunakan PUT untuk reorder
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -307,7 +262,7 @@ export default function ProjectsPage() {
       
       setOrderChanged(false);
       toast.success('Project order saved successfully!');
-      fetchProjects(); // Muat ulang untuk memastikan konsistensi
+      fetchProjects();
     } catch (error) {
       console.error('Error saving project order:', error);
       setError(error.message || 'An error occurred while saving order.');
@@ -319,33 +274,22 @@ export default function ProjectsPage() {
 
   const handleToggleArchive = async (projectToUpdate, newArchivedStatus) => {
     try {
-      // Kita perlu mengirim semua data yang diperlukan oleh API PUT projects/[id]
-      // karena API tersebut mengharapkan semua field untuk update.
       const formDataToSubmit = new FormData();
       formDataToSubmit.append('title', projectToUpdate.title);
-      formDataToSubmit.append('description', projectToUpdate.description || ''); // Pastikan tidak undefined
-      formDataToSubmit.append('link', projectToUpdate.link || ''); // Pastikan tidak undefined
+      formDataToSubmit.append('description', projectToUpdate.description || '');
+      formDataToSubmit.append('link', projectToUpdate.link || '');
       formDataToSubmit.append('order', projectToUpdate.order);
-      formDataToSubmit.append('archived', newArchivedStatus ? 'true' : 'false'); // Kirim sebagai string 'true'/'false'
+      formDataToSubmit.append('archived', newArchivedStatus ? 'true' : 'false');
       formDataToSubmit.append('skills', JSON.stringify(projectToUpdate.skill_ids || []));
       
-      // Logika untuk mengirim gambar
-      // Jika projectToUpdate.image ada, kita perlu memberi sinyal ke backend bahwa gambar tidak berubah
-      // atau jika dihapus, sinyal untuk menghapus
       if (projectToUpdate.image) {
-        // Tidak perlu mengirim file 'image' jika tidak ada perubahan.
-        // Backend akan mempertahankan gambar yang sudah ada jika tidak ada file 'image' baru.
-        // Namun, jika kita ingin menghapus gambar lama, kita harus memberi sinyal 'image_cleared'.
-        // Untuk kasus toggle archive, kita asumsikan gambar tidak berubah, jadi tidak perlu mengirim file.
       } else {
-        // Jika tidak ada gambar sebelumnya, dan tidak ada gambar baru, pastikan path gambar di DB kosong.
-        // Ini penting jika sebelumnya ada gambar dan sekarang dihapus.
         formDataToSubmit.append('image_cleared', 'true'); 
       }
 
       const res = await fetch(`/api/admin/projects/${projectToUpdate.id}`, {
         method: 'PUT',
-        body: formDataToSubmit, // Gunakan FormData
+        body: formDataToSubmit,
       });
 
       if (!res.ok) {
@@ -353,21 +297,19 @@ export default function ProjectsPage() {
         throw new Error(errorData.error || `Failed to ${newArchivedStatus ? 'archive' : 'unarchive'} project`);
       }
       
-      // Update state lokal untuk respons UI yang cepat
       setProjects(prevProjects => 
         prevProjects.map(proj => 
           proj.id === projectToUpdate.id ? { ...proj, archived: newArchivedStatus } : proj
         )
       );
       toast.success(`Project ${newArchivedStatus ? 'archived' : 'unarchived'} successfully!`);
-      fetchProjects(); // Muat ulang untuk menerapkan filter jika perlu
+      fetchProjects();
     } catch (err) {
       console.error('Error toggling archive status:', err);
       setError(err.message || `Failed to ${newArchivedStatus ? 'archive' : 'unarchive'} project. Please try again.`);
       toast.error(`Failed to ${newArchivedStatus ? 'archive' : 'unarchive'} project`);
     }
   };
-
 
   const handleDelete = async (id) => {
     if (!deleteId) return;
@@ -388,7 +330,7 @@ export default function ProjectsPage() {
       setDeleteId(null);
       setDeleteTitle('');
       toast.success('Project deleted successfully!');
-      fetchProjects(); // Muat ulang untuk memastikan konsistensi
+      fetchProjects();
     } catch (err) {
       console.error('Error deleting project:', err); 
       setError(err.message || 'Failed to delete project. Please try again.');
@@ -403,27 +345,6 @@ export default function ProjectsPage() {
     setDeleteTitle(title);
     setShowDeleteModal(true);
   };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown'; 
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', { 
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch {
-      return 'Unknown'; 
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="h-64 flex items-center justify-center">
-        <FiLoader className="w-8 h-8 animate-spin text-sky-400" /> 
-      </div>
-    );
-  }
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -465,7 +386,6 @@ export default function ProjectsPage() {
           </div>
         )} 
 
-        {/* Tombol Filter */}
         <div className="mb-6 flex space-x-3">
           <button
             onClick={() => setFilter('active')}
@@ -515,7 +435,6 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
         {showDeleteModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fadeIn">
             <div className="bg-zinc-800 rounded-xl p-6 max-w-md w-full m-4 animate-scaleIn">
@@ -549,7 +468,6 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        {/* Add global styles for animations */}
         <style jsx global>{`
           @keyframes fadeIn {
             from { opacity: 0; }

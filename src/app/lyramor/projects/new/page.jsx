@@ -1,8 +1,9 @@
+// src/app/lyramor/projects/new/page.jsx
 'use client';
-// src/app/lyramor/projects/new/page.js
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image'; // Tambahkan ini
 import { 
   FiBriefcase, 
   FiSave, 
@@ -12,18 +13,18 @@ import {
   FiUpload,
   FiImage,
   FiTag,
-  FiTrash2, // Untuk tombol hapus gambar
-  FiLink // Untuk ikon link
+  FiTrash2,
+  FiLink
 } from 'react-icons/fi';
 import SkillsSelector from '@/components/admin/SkillsSelector';
-import { toast } from 'react-hot-toast'; // Untuk notifikasi
+import { toast } from 'react-hot-toast';
 
 export default function NewProjectPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    link: '', // Tambahkan state untuk link
+    link: '',
   });
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [imageFile, setImageFile] = useState(null);
@@ -100,7 +101,7 @@ export default function NewProjectPage() {
       const formDataToSubmit = new FormData();
       formDataToSubmit.append('title', formData.title);
       formDataToSubmit.append('description', formData.description);
-      formDataToSubmit.append('link', formData.link); // Kirim data link
+      formDataToSubmit.append('link', formData.link);
       
       formDataToSubmit.append('skills', JSON.stringify(selectedSkills));
       
@@ -119,7 +120,6 @@ export default function NewProjectPage() {
       }
 
       toast.success('Project created successfully!');
-      // Alihkan ke halaman projects setelah berhasil membuat proyek
       router.push('/lyramor/projects'); 
       router.refresh(); 
     } catch (err) {
@@ -178,7 +178,6 @@ export default function NewProjectPage() {
             />
           </div>
 
-          {/* New field for Project Link */}
           <div className="mb-6">
             <label htmlFor="link" className="block text-sm font-medium text-zinc-300 mb-2 flex items-center">
               <FiLink className="mr-2" size={16} />
@@ -201,13 +200,15 @@ export default function NewProjectPage() {
               Project Image
             </label>
             <div className="mt-1 flex flex-col items-center">
-              <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative">
+              <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative"> {/* Tambahkan relative di sini */}
                 {imagePreview ? (
                   <div className="w-full flex flex-col items-center">
-                    <img 
+                    <Image // Ganti <img>
                       src={imagePreview} 
                       alt="Preview" 
-                      className="h-32 object-contain" 
+                      fill // Gunakan fill
+                      style={{ objectFit: 'contain' }} // Atur objectFit
+                      // className="h-32 object-contain" tidak perlu jika pakai fill
                     />
                     <span className="mt-4 text-sm">Click to change image</span>
                   </div>

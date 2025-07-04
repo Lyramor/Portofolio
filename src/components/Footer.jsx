@@ -1,6 +1,8 @@
+// src/components/Footer.jsx
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'; // Tambahkan ini
 import { motion } from 'framer-motion'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faInstagram, faLinkedinIn, faGithub, faTiktok } from '@fortawesome/free-brands-svg-icons'
@@ -47,7 +49,6 @@ export default function Footer() {
     <footer className="bg-zinc-900/80 border-t border-zinc-800">
       <div className="container mx-auto py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {/* Logo and Description */}
           <div className="space-y-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -55,10 +56,12 @@ export default function Footer() {
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
             >
-              <img 
+              <Image // Ganti <img>
                 src="/images/Logo.png" 
                 alt="Cylia Tech Logo" 
-                className="h-12 mb-4"
+                width={64} // h-12 = 48px. Sesuaikan width agar proporsi terjaga jika gambar asli 120x90 (rasio 4:3)
+                height={48} // h-12 = 48px
+                className="mb-4"
               />
               <p className="text-zinc-400 max-w-xs">
                 Building responsive web applications and digital experiences that combine functionality with aesthetic appeal.
@@ -66,7 +69,6 @@ export default function Footer() {
             </motion.div>
           </div>
           
-          {/* Navigation Links */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -89,7 +91,6 @@ export default function Footer() {
             </nav>
           </motion.div>
           
-          {/* Social Media */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -118,7 +119,6 @@ export default function Footer() {
           </motion.div>
         </div>
         
-        {/* Copyright */}
         <div className="pt-8 mt-8 border-t border-zinc-800/50 text-center">
           <p className="text-zinc-500 text-sm">
             &copy; {currentYear} Muhamad Marsa Nur Jaman. All rights reserved.

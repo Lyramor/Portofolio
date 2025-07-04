@@ -179,3 +179,5 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }
 }
+
+export const dynamic = 'force-dynamic';

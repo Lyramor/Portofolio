@@ -1,5 +1,7 @@
+// src/components/admin/SkillsSelector.jsx
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Tambahkan useCallback
+import Image from 'next/image'; // Tambahkan ini
 import { FiLoader, FiTag } from 'react-icons/fi';
 
 export default function SkillsSelector({ selectedSkills, onChange }) {
@@ -7,28 +9,28 @@ export default function SkillsSelector({ selectedSkills, onChange }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchSkills = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch('/api/admin/skills/list'); 
-        
-        if (!res.ok) {
-          throw new Error('Failed to fetch skills list');
-        }
-        
-        const data = await res.json();
-        setSkills(data);
-      } catch (err) {
-        console.error('Error fetching skills:', err);
-        setError('Failed to load skills. Please try again.');
-      } finally {
-        setLoading(false);
+  const fetchSkills = useCallback(async () => { // Bungkus dengan useCallback
+    try {
+      setLoading(true);
+      const res = await fetch('/api/admin/skills/list'); 
+      
+      if (!res.ok) {
+        throw new Error('Failed to fetch skills list');
       }
-    };
+      
+      const data = await res.json();
+      setSkills(data);
+    } catch (err) {
+      console.error('Error fetching skills:', err);
+      setError('Failed to load skills. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Dependensi kosong karena tidak ada variabel dari scope luar yang dipakai di dalam fetchSkills
 
+  useEffect(() => {
     fetchSkills();
-  }, []);
+  }, [fetchSkills]); // Dependensi useEffect menjadi fetchSkills
 
   const handleSkillChange = (skillId) => {
     const newSelectedSkills = selectedSkills.includes(skillId)
@@ -75,10 +77,12 @@ export default function SkillsSelector({ selectedSkills, onChange }) {
                 className="flex items-center gap-2 cursor-pointer py-1 text-zinc-200"
               >
                 {skill.imgSrc && (
-                  <img
+                  <Image // Ganti <img>
                     src={skill.imgSrc}
                     alt={skill.label}
-                    className="w-5 h-5 object-contain"
+                    width={20} // w-5/h-5 setara 20px/20px
+                    height={20} // w-5/h-5 setara 20px/20px
+                    className="object-contain"
                   />
                 )}
                 <span>{skill.label}</span>

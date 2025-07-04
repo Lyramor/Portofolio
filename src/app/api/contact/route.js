@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import nodemailer from 'nodemailer';
+export const dynamic = 'force-dynamic';
 
 // Form validation schema
 const contactSchema = z.object({

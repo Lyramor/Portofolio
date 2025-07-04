@@ -1,40 +1,31 @@
+// src/components/About.jsx
 /**
  * @copyright 2025 Muhamad Marsa Nur Jaman - Lyramor
  * @license Apache-2.0
  */
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { FiLoader, FiAlertCircle } from 'react-icons/fi';
+import Image from 'next/image'; // Tambahkan ini
 
-// Menerima props yang sudah diambil dari server
 export default function About({ aboutContent, projectCount, experienceYears }) {
-  // State terpisah untuk angka yang dianimasikan
   const [animatedProjectCount, setAnimatedProjectCount] = useState(0);
   const [animatedExperienceYears, setAnimatedExperienceYears] = useState(0);
-  const [loading, setLoading] = useState(false); // Tidak perlu loading di sini lagi untuk data utama
-  const [error, setError] = useState(null); // Tidak perlu error di sini lagi untuk data utama
+  const [loading] = useState(false);
+  const [error] = useState(null);
 
-  // Hook useInView untuk mendeteksi saat komponen masuk viewport
   const { ref, inView } = useInView({
     threshold: 0.5, 
     triggerOnce: true 
   });
   const animationStarted = useRef(false); 
 
-  // Hapus useEffect untuk fetching data, karena data sudah ada di props
-  // useEffect(() => {
-  //   const fetchData = async () => { /* ... logika fetching ... */ };
-  //   fetchData();
-  // }, []);
-
-  // useEffect untuk animasi angka counter saat komponen masuk viewport
   useEffect(() => {
     if (inView && !animationStarted.current) {
       animationStarted.current = true;
       
-      // Animasi Project Count
       let currentProjectCount = 0;
       const projectIncrement = Math.ceil(projectCount / 30); 
       const projectInterval = setInterval(() => {
@@ -46,7 +37,6 @@ export default function About({ aboutContent, projectCount, experienceYears }) {
         setAnimatedProjectCount(currentProjectCount);
       }, 50);
 
-      // Animasi Experience Years (mirip dengan project count)
       let currentExperienceYears = 0;
       const experienceIncrement = Math.ceil(experienceYears / 30);
       const experienceInterval = setInterval(() => {
@@ -58,7 +48,6 @@ export default function About({ aboutContent, projectCount, experienceYears }) {
         setAnimatedExperienceYears(currentExperienceYears);
       }, 50);
 
-      // Cleanup function untuk membersihkan interval saat komponen unmount
       return () => {
         clearInterval(projectInterval);
         clearInterval(experienceInterval);
@@ -66,7 +55,6 @@ export default function About({ aboutContent, projectCount, experienceYears }) {
     }
   }, [inView, projectCount, experienceYears]); 
 
-  // Tampilkan loading state (hanya jika ada loading tambahan di masa depan, saat ini tidak relevan untuk data utama)
   if (loading) {
     return (
       <section id="about" className="section">
@@ -78,7 +66,6 @@ export default function About({ aboutContent, projectCount, experienceYears }) {
     );
   }
 
-  // Tampilkan error state (hanya jika ada error tambahan di masa depan, saat ini tidak relevan untuk data utama)
   if (error) {
     return (
       <section id="about" className="section">
@@ -102,7 +89,6 @@ export default function About({ aboutContent, projectCount, experienceYears }) {
               {aboutContent || "Welcome! I'm Marsa, a junior web developer... (Content not loaded or empty)"}
             </p>
             <div ref={ref} className="flex flex-wrap items-center gap-4 md:gap-7">
-              {/* Card Project Done */}
               <div className="counter-item">
                 <div className="flex items-center md:mb-2">
                   <span className="text-2xl font-semibold md:text-4xl count-number">
@@ -113,7 +99,6 @@ export default function About({ aboutContent, projectCount, experienceYears }) {
                 <p className="text-sm text-zinc-400">Project done</p>
               </div>
 
-              {/* Card Years of Experience */}
               <div className="counter-item">
                 <div className="flex items-center md:mb-2">
                   <span className="text-2xl font-semibold md:text-4xl count-number">
@@ -124,13 +109,12 @@ export default function About({ aboutContent, projectCount, experienceYears }) {
                 <p className="text-sm text-zinc-400">Years of experience</p>
               </div>
               
-              {/* Gambar ikon tetap */}
-              <img
+              <Image // Ganti <img>
                 src="/images/icon.png"
-                width={30}
-                height={30}
-                alt="Cylia Tech"
-                className="ml-auto md:w-[40px] md:h-[40px]"
+                width={40} // Berdasarkan md:w-[40px]
+                height={40} // Berdasarkan md:h-[40px]
+                alt="Cylia Tech Icon"
+                className="ml-auto" // class ml-auto md:w-[40px] md:h-[40px] bisa disisakan atau diganti css module
               />
             </div>
           </div>

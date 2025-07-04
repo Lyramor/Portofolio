@@ -1,6 +1,7 @@
 // src/app/api/experiences/route.js
 import { NextResponse } from 'next/server';
 import { getExperiencesWithSkills } from '@/lib/db'; // Mengambil fungsi dari db.js
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {

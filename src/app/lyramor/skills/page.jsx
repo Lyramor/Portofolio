@@ -1,7 +1,8 @@
+// src/app/lyramor/skills/page.jsx
 'use client';
-// src/app/lyramor/skills/page.jsx - Enhanced drag-and-drop experience with archiving
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image'; // Tambahkan ini
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { 
@@ -12,18 +13,16 @@ import {
   FiLoader,
   FiAlertCircle,
   FiMove,
-  FiArchive, // Icon untuk arsip
-  FiEye,     // Icon untuk aktif
-  FiEyeOff   // Icon untuk diarsipkan
+  FiArchive,
+  FiEye,
+  FiEyeOff
 } from 'react-icons/fi';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGripLines } from '@fortawesome/free-solid-svg-icons';
-import { toast } from 'react-hot-toast'; // Import toast for notifications
+import { toast } from 'react-hot-toast';
 
-// Drag-and-drop item type
 const ITEM_TYPE = 'skill';
 
-// Komponen skill yang dapat di-drag dengan animasi dan feedback yang ditingkatkan
 const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick, handleToggleArchive }) => {
   const ref = useRef(null);
   
@@ -37,7 +36,7 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick, handleTogg
 
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: ITEM_TYPE,
-    hover: (item, monitor) => {
+    hover: (item) => { // monitor tidak dipakai, bisa dihapus
       if (!ref.current) {
         return;
       }
@@ -45,44 +44,11 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick, handleTogg
       const dragIndex = item.index;
       const hoverIndex = index;
       
-      // Jangan ganti item dengan dirinya sendiri
       if (dragIndex === hoverIndex) {
         return;
       }
       
-      // Tentukan persegi panjang di layar
-      const hoverBoundingRect = ref.current.getBoundingClientRect();
-      
-      // Dapatkan titik tengah vertikal
-      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      
-      // Tentukan posisi mouse
-      const clientOffset = monitor.getClientOffset();
-      
-      // Dapatkan piksel ke atas
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-      
-      // Lakukan perpindahan hanya jika mouse telah melewati setengah tinggi item
-      // Saat menyeret ke bawah, pindahkan hanya jika kursor di bawah 50%
-      // Saat menyeret ke atas, pindahkan hanya jika kursor di atas 50%
-      
-      // Menyeret ke bawah
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-        return;
-      }
-      
-      // Menyeret ke atas
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-        return;
-      }
-      
-      // Waktunya untuk benar-benar melakukan tindakan
       moveSkill(dragIndex, hoverIndex);
-      
-      // Catatan: kita memutasi item monitor di sini!
-      // Umumnya lebih baik menghindari mutasi,
-      // tetapi bagus di sini demi kinerja
-      // untuk menghindari pencarian indeks yang mahal.
       item.index = hoverIndex;
     },
     collect: (monitor) => ({
@@ -91,14 +57,11 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick, handleTogg
     }),
   });
   
-  // Inisialisasi ref untuk drag dan drop
   preview(drop(ref));
 
-  // Terapkan drag handle hanya pada ikon grip
   const dragHandle = useRef(null);
   drag(dragHandle);
   
-  // Gaya visual untuk status yang berbeda
   const cardStyle = `
     bg-zinc-800 border rounded-xl p-6 flex flex-col
     transition-all duration-200 transform
@@ -125,10 +88,12 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick, handleTogg
         
         {skill.imgSrc && (
           <div className={`w-10 h-10 bg-zinc-700 rounded-lg p-2 mr-3 flex items-center justify-center overflow-hidden ${skill.archived ? 'grayscale' : ''}`}>
-            <img 
+            <Image // Ganti <img>
               src={skill.imgSrc.startsWith('/') ? skill.imgSrc : `/${skill.imgSrc}`} 
               alt={skill.label} 
-              className="w-full h-full object-contain" 
+              width={40} // w-10/h-10 setara 40px/40px
+              height={40} // w-10/h-10 setara 40px/40px
+              className="object-contain"
             />
           </div>
         )}
@@ -151,7 +116,7 @@ const DraggableSkill = ({ skill, index, moveSkill, handleDeleteClick, handleTogg
         
         <div className="flex gap-2">
           <button
-            onClick={() => handleToggleArchive(skill, !skill.archived)} // Mengirim seluruh objek skill
+            onClick={() => handleToggleArchive(skill, !skill.archived)}
             className={`p-2 rounded-lg transition-colors ${
               skill.archived 
                 ? 'text-green-400 hover:text-green-300 bg-green-600/20 hover:bg-green-600/40' 
@@ -183,13 +148,9 @@ export default function SkillsIndexPage() {
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [orderChanged, setOrderChanged] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [filter, setFilter] = useState('active'); // 'active', 'archived', 'all'
+  const [filter, setFilter] = useState('active');
 
-  useEffect(() => {
-    fetchSkills();
-  }, [filter]); // Muat ulang skill saat filter berubah
-
-  const fetchSkills = async () => {
+  const fetchSkills = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -202,13 +163,11 @@ export default function SkillsIndexPage() {
       
       const data = await res.json();
       
-      // Jika skill tidak memiliki properti order, tetapkan urutan default
       const skillsWithOrder = data.map((skill, index) => ({
         ...skill,
         order: skill.order !== undefined ? skill.order : index
       }));
       
-      // Urutkan berdasarkan kolom order (backend seharusnya menangani ini, tetapi untuk konsistensi sisi klien)
       skillsWithOrder.sort((a, b) => a.order - b.order);
       
       setSkills(skillsWithOrder);
@@ -219,9 +178,12 @@ export default function SkillsIndexPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
 
-  // Fungsi pindah yang dioptimalkan dengan pembaruan state yang lebih jarang
+  useEffect(() => {
+    fetchSkills();
+  }, [fetchSkills]);
+
   const moveSkill = (fromIndex, toIndex) => {
     setIsDragging(true);
     
@@ -230,7 +192,6 @@ export default function SkillsIndexPage() {
       const [movedSkill] = updatedSkills.splice(fromIndex, 1);
       updatedSkills.splice(toIndex, 0, movedSkill);
       
-      // Perbarui properti order
       return updatedSkills.map((skill, index) => ({
         ...skill,
         order: index
@@ -240,7 +201,6 @@ export default function SkillsIndexPage() {
     setOrderChanged(true);
   };
 
-  // Tambahkan penangan drag end (tidak langsung digunakan di sini, tetapi praktik yang baik untuk konteks DND)
   const handleDragEnd = () => {
     setIsDragging(false);
   };
@@ -249,7 +209,6 @@ export default function SkillsIndexPage() {
     try {
       setIsSavingOrder(true);
       
-      // Panggil API untuk memperbarui urutan skill
       const orderUpdates = skills.map((skill) => ({
         id: skill.id,
         order: skill.order
@@ -269,7 +228,7 @@ export default function SkillsIndexPage() {
       
       setOrderChanged(false);
       toast.success('Skill order saved successfully!');
-      fetchSkills(); // Muat ulang untuk memastikan konsistensi
+      fetchSkills();
     } catch (err) {
       console.error('Error saving skill order:', err);
       setError('Failed to save skill order. Please try again.');
@@ -279,7 +238,6 @@ export default function SkillsIndexPage() {
     }
   };
 
-  // Fungsi handleToggleArchive yang diperbarui
   const handleToggleArchive = async (skillToUpdate, newArchivedStatus) => {
     try {
       const res = await fetch(`/api/admin/skills/${skillToUpdate.id}`, {
@@ -288,10 +246,10 @@ export default function SkillsIndexPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          label: skillToUpdate.label, // Kirim label
-          imgSrc: skillToUpdate.imgSrc, // Kirim imgSrc
-          description: skillToUpdate.description, // Kirim description
-          archived: newArchivedStatus // Kirim status archived yang baru
+          label: skillToUpdate.label,
+          imgSrc: skillToUpdate.imgSrc,
+          description: skillToUpdate.description,
+          archived: newArchivedStatus
         }), 
       });
       
@@ -300,14 +258,13 @@ export default function SkillsIndexPage() {
         throw new Error(errorData.error || `Failed to ${newArchivedStatus ? 'archive' : 'unarchive'} skill`);
       }
       
-      // Perbarui state secara lokal terlebih dahulu untuk respons UI yang lebih cepat
       setSkills(prevSkills => 
         prevSkills.map(skill => 
           skill.id === skillToUpdate.id ? { ...skill, archived: newArchivedStatus } : skill
         )
       );
       toast.success(`Skill ${newArchivedStatus ? 'archived' : 'unarchived'} successfully!`);
-      fetchSkills(); // Muat ulang untuk menerapkan filter jika perlu
+      fetchSkills();
     } catch (err) {
       console.error('Error toggling archive status:', err);
       setError(err.message || `Failed to ${newArchivedStatus ? 'archive' : 'unarchive'} skill. Please try again.`);
@@ -327,23 +284,21 @@ export default function SkillsIndexPage() {
         throw new Error(errorData.error || 'Failed to delete skill');
       }
       
-      // Perbarui daftar skill setelah penghapusan
       setSkills(prevSkills => {
         const updatedSkills = prevSkills.filter(skill => skill.id !== id);
         
-        // Hitung ulang urutan (opsional, karena pemuatan ulang akan melakukan ini)
         return updatedSkills.map((skill, index) => ({
           ...skill,
           order: index
         }));
       });
 
-      setOrderChanged(true); // Menunjukkan bahwa urutan mungkin telah berubah
+      setOrderChanged(true);
       toast.success('Skill deleted successfully!');
-      fetchSkills(); // Muat ulang untuk memastikan konsistensi
+      fetchSkills();
     } catch (err) {
       console.error('Error deleting skill:', err);
-      setError(err.message || 'Failed to delete skill. Please try again.');
+      setError('Failed to delete skill. Please try again.');
       toast.error('Failed to delete skill');
     } finally {
       setIsDeleting(false);
@@ -387,7 +342,7 @@ export default function SkillsIndexPage() {
             <Link 
               href="/lyramor/skills/new"
               className="bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
+            > 
               <FiPlus size={18} />
               <span>Add Skill</span>
             </Link>
@@ -401,7 +356,6 @@ export default function SkillsIndexPage() {
           </div>
         )}
 
-        {/* Tombol Filter */}
         <div className="mb-6 flex space-x-3">
           <button
             onClick={() => setFilter('active')}
@@ -436,7 +390,7 @@ export default function SkillsIndexPage() {
             <Link 
               href="/lyramor/skills/new"
               className="bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
-            >
+            > 
               <FiPlus size={18} />
               <span>Add Your First Skill</span>
             </Link>
@@ -462,7 +416,7 @@ export default function SkillsIndexPage() {
                   skill={skill}
                   index={index}
                   moveSkill={moveSkill}
-                  handleDeleteClick={setDeleteSkill} // Masih menggunakan setDeleteSkill untuk modal
+                  handleDeleteClick={setDeleteSkill}
                   handleToggleArchive={handleToggleArchive}
                 />
               </div>
@@ -470,7 +424,6 @@ export default function SkillsIndexPage() {
           </div>
         )}
 
-        {/* Modal Konfirmasi Hapus */}
         {deleteSkill && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fadeIn">
             <div className="bg-zinc-800 rounded-xl p-6 max-w-md w-full m-4 animate-scaleIn">
@@ -505,7 +458,6 @@ export default function SkillsIndexPage() {
         )}
       </div>
 
-      {/* Tambahkan gaya global untuk animasi */}
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; }

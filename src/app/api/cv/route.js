@@ -1,6 +1,7 @@
 // src/app/api/cv/route.js (Public API)
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
