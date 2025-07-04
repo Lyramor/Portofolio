@@ -12,61 +12,55 @@ import Project from '@/components/Project';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 
-// Fungsi untuk mengambil data dari API publik
-async function fetchPublicData(path) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/${path}`, {
-    // Cache data untuk 5 menit, revalidate di latar belakang
-    next: { revalidate: 300 } 
-  });
-
-  if (!res.ok) {
-    console.error(`Failed to fetch data from /api/${path}:`, res.status, res.statusText);
-    // Jika gagal, kembalikan array kosong atau nilai default yang sesuai
-    // agar komponen tidak error saat mencoba memetakan data
-    return null; // Atau [] jika API selalu mengembalikan array
-  }
-  return res.json();
-}
+// **PERBAIKAN**: Impor fungsi database secara langsung, bukan menggunakan fetch.
+import {
+  getAbout,
+  getCounters,
+  getSkills,
+  getExperiencesWithSkills,
+  getProjectsWithSkills,
+  query as dbQuery // Ganti nama untuk menghindari konflik
+} from '@/lib/db';
 
 export default async function HomePage() {
-  // Ambil semua data di server-side
+  // Ambil semua data di server-side langsung dari database.
+  // Ini adalah cara SSR yang benar di Next.js App Router.
   const [
-    aboutData, 
-    projectCounterData, 
-    experienceCounterData, 
-    skillItems, 
-    experienceData, 
+    aboutData,
+    counters,
+    skillItems,
+    experienceData,
     projectData,
     cvLinkData
   ] = await Promise.all([
-    fetchPublicData('about'),
-    fetchPublicData('counters/projects'),
-    fetchPublicData('counters/experience'),
-    fetchPublicData('skills'),
-    fetchPublicData('experiences'),
-    fetchPublicData('projects'),
-    fetchPublicData('cv')
+    getAbout(),
+    getCounters(),
+    getSkills(),
+    getExperiencesWithSkills(),
+    getProjectsWithSkills(),
+    dbQuery('SELECT link_cv FROM cv LIMIT 1') // Ambil link CV langsung
   ]);
 
-  // Pastikan data yang diteruskan adalah format yang diharapkan
+  // Pastikan data yang diteruskan adalah format yang diharapkan dengan fallback.
   const aboutContent = aboutData?.content || "Welcome! I'm Marsa, a junior web developer...";
-  const projectCount = projectCounterData?.number || 0;
-  const experienceYears = experienceCounterData?.number || 0;
-  const cvLink = cvLinkData?.link_cv || null;
+  const projectCount = counters?.projects || 0;
+  const experienceYears = counters?.experience || 0;
+  const cvLink = cvLinkData?.[0]?.link_cv || null;
 
   return (
     <div className="relative overflow-hidden">
       <Header />
       <main>
+        {/* Teruskan data sebagai props ke komponen Client */}
         <Hero cvLink={cvLink} />
-        <About 
-          aboutContent={aboutContent} 
-          projectCount={projectCount} 
-          experienceYears={experienceYears} 
+        <About
+          aboutContent={aboutContent}
+          projectCount={projectCount}
+          experienceYears={experienceYears}
         />
-        <Skill skillItems={skillItems || []} /> {/* Pastikan skillItems adalah array */}
-        <Experience experienceData={experienceData || []} /> {/* Pastikan experienceData adalah array */}
-        <Project projectData={projectData || []} /> {/* Pastikan projectData adalah array */}
+        <Skill skillItems={skillItems || []} />
+        <Experience experienceData={experienceData || []} />
+        <Project projectData={projectData || []} />
         <Contact/>
         <Footer />
       </main>

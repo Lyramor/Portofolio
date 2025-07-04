@@ -1,9 +1,9 @@
-'use client';
-// src/app/lyramor/experience/edit/page.js
+'use client'; // <-- **PERBAIKAN**: Tambahkan baris ini di paling atas
+
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FiSave, FiX, FiTrash2, FiLoader, FiAlertCircle, FiTag } from 'react-icons/fi'; 
-import SkillsSelector from '@/components/admin/SkillsSelector'; 
+import { FiSave, FiX, FiTrash2, FiLoader, FiAlertCircle, FiTag } from 'react-icons/fi';
+import SkillsSelector from '@/components/admin/SkillsSelector';
 
 export default function EditExperience() {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function EditExperience() {
     company: '',
     description: '',
   });
-  const [selectedSkills, setSelectedSkills] = useState([]); 
+  const [selectedSkills, setSelectedSkills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -30,7 +30,6 @@ export default function EditExperience() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch experience details
         const expRes = await fetch(`/api/admin/experience/detail?id=${id}`);
         if (!expRes.ok) {
           throw new Error('Experience not found');
@@ -42,12 +41,11 @@ export default function EditExperience() {
           company: expData.company || '',
           description: expData.description || '',
         });
-        
-        // Asumsikan backend sekarang mengembalikan skill_ids sebagai array of integers
+
         if (expData.skill_ids && Array.isArray(expData.skill_ids)) {
           setSelectedSkills(expData.skill_ids);
         } else {
-            setSelectedSkills([]); 
+            setSelectedSkills([]);
         }
 
         setError(null);
@@ -76,7 +74,6 @@ export default function EditExperience() {
     setSubmitting(true);
     setError(null);
 
-    // Basic validation
     if (!formData.period.trim() || !formData.position.trim() || !formData.company.trim()) {
       setError('Period, Position, and Company are required.');
       setSubmitting(false);
@@ -90,9 +87,9 @@ export default function EditExperience() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: id, 
+          id: id,
           ...formData,
-          skillIds: selectedSkills 
+          skillIds: selectedSkills
         }),
       });
 
@@ -267,7 +264,6 @@ export default function EditExperience() {
             <FiTag className="mr-2" size={16} />
             Technologies Used
           </label>
-          {/* Menggunakan komponen SkillsSelector */}
           <SkillsSelector 
             selectedSkills={selectedSkills} 
             onChange={handleSkillsChange} 
