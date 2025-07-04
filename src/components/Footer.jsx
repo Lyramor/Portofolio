@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'; // Tambahkan ini
+import Image from 'next/image';
 import { motion } from 'framer-motion'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faInstagram, faLinkedinIn, faGithub, faTiktok } from '@fortawesome/free-brands-svg-icons'
@@ -17,25 +17,25 @@ const navLinks = [
 
 const socialLinks = [
   { 
-    href: "https://instagram.com/yourhandle", 
+    href: "https://instagram.com/mmarsanj",
     icon: faInstagram,
     label: "Instagram",
     color: "hover:text-pink-500"
   },
   { 
-    href: "https://linkedin.com/in/yourprofile", 
+    href: "https://www.linkedin.com/in/muhamad-marsa-nur-jaman-157025365",
     icon: faLinkedinIn,
     label: "LinkedIn",
     color: "hover:text-blue-600"
   },
   { 
-    href: "https://github.com/yourusername", 
+    href: "https://github.com/Lyramor", // Tautan GitHub diperbarui
     icon: faGithub,
     label: "GitHub",
     color: "hover:text-white"
   },
   { 
-    href: "https://tiktok.com/@yourusername", 
+    href: "https://tiktok.com/@yourusername", // Pertahankan sebagai placeholder jika belum ada akun spesifik
     icon: faTiktok,
     label: "TikTok",
     color: "hover:text-cyan-400"
@@ -56,11 +56,11 @@ export default function Footer() {
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
             >
-              <Image // Ganti <img>
+              <Image
                 src="/images/Logo.png" 
                 alt="Cylia Tech Logo" 
-                width={64} // h-12 = 48px. Sesuaikan width agar proporsi terjaga jika gambar asli 120x90 (rasio 4:3)
-                height={48} // h-12 = 48px
+                width={64}
+                height={48}
                 className="mb-4"
               />
               <p className="text-zinc-400 max-w-xs">
@@ -127,4 +127,4 @@ export default function Footer() {
       </div>
     </footer>
   )
-}
+}   
