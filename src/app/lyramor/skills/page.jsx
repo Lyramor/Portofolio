@@ -284,35 +284,31 @@ export default function SkillsIndexPage() {
         throw new Error(errorData.error || 'Failed to delete skill');
       }
       
+      // Hapus skill dari state lokal
       setSkills(prevSkills => {
         const updatedSkills = prevSkills.filter(skill => skill.id !== id);
-        
+        // Perbarui urutan display_order di state lokal
         return updatedSkills.map((skill, index) => ({
           ...skill,
           order: index
         }));
       });
 
-      setOrderChanged(true);
+      // Secara otomatis simpan urutan baru ke database setelah penghapusan
+      // Ini akan memanggil endpoint reorder di backend
+      await saveSkillOrder(); 
+
       toast.success('Skill deleted successfully!');
-      fetchSkills();
+      setDeleteSkill(null); // Tutup modal konfirmasi
     } catch (err) {
       console.error('Error deleting skill:', err);
       setError('Failed to delete skill. Please try again.');
       toast.error('Failed to delete skill');
     } finally {
       setIsDeleting(false);
-      setDeleteSkill(null);
+      // setDeleteSkill(null); // Ini sudah dilakukan di dalam try block jika sukses
     }
   };
-
-  if (loading) {
-    return (
-      <div className="h-64 flex items-center justify-center">
-        <FiLoader className="w-8 h-8 animate-spin text-sky-400" />
-      </div>
-    );
-  }
 
   return (
     <DndProvider backend={HTML5Backend}>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image'; // Tambahkan ini
+import Image from 'next/image'; // Add this
 import { 
   FiCode, 
   FiSave, 
@@ -48,14 +48,14 @@ export default function NewSkillPage() {
     setError(null);
 
     if (!file.type.includes('image/')) {
-      setError('Harap pilih file gambar (JPG, PNG, SVG, dll.).');
+      setError('Please select an image file (JPG, PNG, SVG, etc.).');
       setImageFile(null);
       setImagePreview(null);
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      setError('Ukuran gambar harus kurang dari 2MB.');
+      setError('Image size should be less than 2MB.');
       setImageFile(null);
       setImagePreview(null);
       return;
@@ -90,7 +90,7 @@ export default function NewSkillPage() {
     setError(null);
 
     if (!formData.label.trim()) {
-      setError('Nama skill wajib diisi.');
+      setError('Skill name is required.');
       setSaving(false);
       return;
     }
@@ -109,7 +109,7 @@ export default function NewSkillPage() {
 
         if (!uploadRes.ok) {
           const errorData = await uploadRes.json();
-          throw new Error(errorData.error || 'Gagal mengunggah gambar.');
+          throw new Error(errorData.error || 'Failed to upload image.');
         }
 
         const imageData = await uploadRes.json();
@@ -132,14 +132,14 @@ export default function NewSkillPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'Gagal membuat skill baru.');
+        throw new Error(errorData.error || 'Failed to create new skill.');
       }
 
       router.push('/lyramor/skills');
       router.refresh();
     } catch (err) {
       console.error('Error creating skill:', err);
-      setError(err.message || 'Gagal membuat skill. Silakan coba lagi.');
+      setError(err.message || 'Failed to create skill. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -149,7 +149,7 @@ export default function NewSkillPage() {
     <div>
       <div className="mb-6 flex items-center">
         <FiCode className="text-sky-400 mr-3" size={24} />
-        <h1 className="text-2xl font-bold">Tambah Skill Baru</h1>
+        <h1 className="text-2xl font-bold">Add New Skill</h1>
       </div>
 
       {error && (
@@ -163,7 +163,7 @@ export default function NewSkillPage() {
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
             <label htmlFor="label" className="block text-sm font-medium text-zinc-300 mb-2">
-              Nama Skill *
+              Skill Name *
             </label>
             <input
               type="text"
@@ -172,7 +172,7 @@ export default function NewSkillPage() {
               value={formData.label}
               onChange={handleChange}
               className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              placeholder="Contoh: React, JavaScript, UI Design"
+              placeholder="e.g., React, JavaScript, UI Design"
               required
             />
           </div>
@@ -186,7 +186,7 @@ export default function NewSkillPage() {
                   ? 'bg-sky-600 text-white' 
                   : 'bg-zinc-700 text-zinc-300'} rounded-l-lg transition-colors`}
               >
-                URL Gambar
+                Image URL
               </button>
               <button
                 type="button"
@@ -195,14 +195,14 @@ export default function NewSkillPage() {
                   ? 'bg-sky-600 text-white' 
                   : 'bg-zinc-700 text-zinc-300'} rounded-r-lg transition-colors`}
               >
-                Unggah Gambar
+                Upload Image
               </button>
             </div>
 
             {uploadOption === 'url' ? (
               <>
                 <label htmlFor="imgSrc" className="block text-sm font-medium text-zinc-300 mb-2">
-                  URL Gambar
+                  Image URL
                 </label>
                 <input
                   type="text"
@@ -214,19 +214,19 @@ export default function NewSkillPage() {
                   placeholder="https://example.com/icon.svg"
                 />
                 <p className="text-zinc-500 text-sm mt-2">
-                  Masukkan URL ikon atau logo skill (direkomendasikan SVG).
+                  Enter the URL of the skill icon or logo (SVG recommended).
                 </p>
                 {formData.imgSrc && (
-                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center relative"> {/* Tambahkan relative di sini */}
-                    <Image // Ganti <img>
+                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center relative"> {/* Add relative here */}
+                    <Image // Change <img>
                       src={formData.imgSrc} 
-                      alt="Pratinjau URL Gambar" 
-                      fill // Gunakan fill
-                      style={{ objectFit: 'contain' }} // Atur objectFit
+                      alt="Image URL Preview" 
+                      fill // Use fill
+                      style={{ objectFit: 'contain' }} // Set objectFit
                       onError={(e) => { 
-                        // next/image tidak menggunakan onError seperti tag <img>,
-                        // Anda perlu menangani fallback di komponen pembungkus
-                        // atau menyediakan gambar fallback secara langsung di src
+                        // next/image does not use onError like an <img> tag,
+                        // you need to handle fallback in the wrapper component
+                        // or provide a fallback image directly in src
                       }}
                     />
                   </div>
@@ -235,24 +235,24 @@ export default function NewSkillPage() {
             ) : (
               <>
                 <label htmlFor="imageUpload" className="block text-sm font-medium text-zinc-300 mb-2">
-                  Unggah Gambar
+                  Upload Image
                 </label>
                 <div className="mt-1 flex items-center">
-                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative"> {/* Tambahkan relative di sini */}
+                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative"> {/* Add relative here */}
                     {imagePreview ? (
                       <div className="w-full flex flex-col items-center">
-                        <Image // Ganti <img>
+                        <Image // Change <img>
                           src={imagePreview} 
-                          alt="Pratinjau Unggahan" 
-                          fill // Gunakan fill
-                          style={{ objectFit: 'contain' }} // Atur objectFit
+                          alt="Upload Preview" 
+                          fill // Use fill
+                          style={{ objectFit: 'contain' }} // Set objectFit
                         />
-                        <span className="mt-2 text-base">Klik untuk mengubah gambar</span>
+                        <span className="mt-2 text-base">Click to change image</span>
                       </div>
                     ) : (
                       <>
                         <FiUpload className="w-8 h-8" />
-                        <span className="mt-2 text-base">Pilih gambar</span>
+                        <span className="mt-2 text-base">Select an image</span>
                       </>
                     )}
                     <input 
@@ -267,7 +267,7 @@ export default function NewSkillPage() {
                         type="button"
                         onClick={handleClearImage}
                         className="absolute top-2 right-2 p-2 bg-red-600/70 text-white rounded-full hover:bg-red-700/70 transition-colors"
-                        title="Hapus Gambar"
+                        title="Clear Image"
                       >
                         <FiTrash2 size={16} />
                       </button>
@@ -275,7 +275,7 @@ export default function NewSkillPage() {
                   </label>
                 </div>
                 <p className="text-zinc-500 text-sm mt-2">
-                  Ukuran file maksimal: 2MB. Format yang direkomendasikan: SVG, PNG, JPEG.
+                  Max file size: 2MB. Recommended formats: SVG, PNG, JPEG.
                 </p>
               </>
             )}
@@ -283,7 +283,7 @@ export default function NewSkillPage() {
 
           <div className="mb-6">
             <label htmlFor="description" className="block text-sm font-medium text-zinc-300 mb-2">
-              Deskripsi
+              Description
             </label>
             <textarea
               id="description"
@@ -291,8 +291,8 @@ export default function NewSkillPage() {
               value={formData.description}
               onChange={handleChange}
               rows="4"
-              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              placeholder="Deskripsi singkat tentang skill ini"
+              className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              placeholder="Brief description of your experience with this skill"
             />
           </div>
 
@@ -302,7 +302,7 @@ export default function NewSkillPage() {
               className="px-4 py-2 border border-zinc-600 rounded-lg hover:bg-zinc-700 transition-colors flex items-center gap-2"
             >
               <FiX size={18} />
-              <span>Batal</span>
+              <span>Cancel</span>
             </Link>
             
             <button
@@ -315,7 +315,7 @@ export default function NewSkillPage() {
               ) : (
                 <FiSave size={18} />
               )}
-              <span>Simpan Skill</span>
+              <span>Save Skill</span>
             </button>
           </div>
         </form>

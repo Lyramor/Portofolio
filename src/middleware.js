@@ -5,10 +5,6 @@ export function middleware(request) {
   const path = request.nextUrl.pathname;
   const session = request.cookies.get('lyra_session')?.value;
   
-  console.log('=== MIDDLEWARE ===');
-  console.log('Path:', path);
-  console.log('Session exists:', !!session);
-  
   // FIX: Use EXACT path matching for public paths to avoid prefix conflicts
   const publicPaths = ['/lyra', '/api/auth/login', '/api/auth/logout'];
   const isPublicPath = publicPaths.includes(path) || path.startsWith('/api/auth/login');

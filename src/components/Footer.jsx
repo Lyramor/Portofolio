@@ -29,13 +29,13 @@ const socialLinks = [
     color: "hover:text-blue-600"
   },
   { 
-    href: "https://github.com/Lyramor", // Tautan GitHub diperbarui
+    href: "https://github.com/Lyramor", 
     icon: faGithub,
     label: "GitHub",
     color: "hover:text-white"
   },
   { 
-    href: "https://tiktok.com/@yourusername", // Pertahankan sebagai placeholder jika belum ada akun spesifik
+    href: "https://tiktok.com/@cylia.tech", 
     icon: faTiktok,
     label: "TikTok",
     color: "hover:text-cyan-400"

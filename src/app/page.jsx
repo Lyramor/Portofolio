@@ -35,9 +35,9 @@ export default async function HomePage() {
   ] = await Promise.all([
     getAbout(),
     getCounters(),
-    getSkills(),
-    getExperiencesWithSkills(),
-    getProjectsWithSkills(),
+    getSkills(), // Skill akan difilter di db.js agar hanya yang aktif
+    getExperiencesWithSkills(), // Ini sekarang akan mengatasi N+1 query
+    getProjectsWithSkills(), // Ini sekarang akan mengatasi N+1 query
     dbQuery('SELECT link_cv FROM cv LIMIT 1') // Ambil link CV langsung
   ]);
 

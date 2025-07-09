@@ -313,14 +313,25 @@ async function updateProjectSkills(projectId, skillIds) {
 }
 
 async function getProjectsWithSkills() {
-  // Mengambil proyek dan skill terkait, diurutkan berdasarkan `order`
-  const projects = await query('SELECT * FROM projects ORDER BY `order` ASC, created_at DESC');
-  return await Promise.all(
-    projects.map(async project => ({
-      ...project,
-      skills: await getProjectSkills(project.id)
-    }))
-  );
+  // MODIFIKASI: Ambil semua proyek beserta skill terkait dalam satu query (mengatasi N+1)
+  const projects = await query(`
+    SELECT
+      p.*,
+      GROUP_CONCAT(s.id) as skill_ids,
+      GROUP_CONCAT(s.label) as skill_labels
+    FROM projects p
+    LEFT JOIN project_skills ps ON p.id = ps.project_id
+    LEFT JOIN skills s ON ps.skill_id = s.id
+    WHERE p.archived = 0 -- Pastikan hanya proyek yang tidak diarsipkan
+    GROUP BY p.id
+    ORDER BY p.\`order\` ASC, p.created_at DESC
+  `);
+
+  return projects.map(project => ({
+    ...project,
+    skill_ids: project.skill_ids ? project.skill_ids.split(',').map(id => parseInt(id)) : [],
+    technologies: project.skill_labels ? project.skill_labels.split(',') : []
+  }));
 }
 
 // Experience Management
@@ -337,13 +348,24 @@ async function getExperienceById(id) {
 }
 
 async function getExperiencesWithSkills() {
-  const experiences = await getExperiences();
-  return await Promise.all(
-    experiences.map(async exp => ({
-      ...exp,
-      skills: await getExperienceSkills(exp.id)
-    }))
-  );
+  // MODIFIKASI: Ambil semua pengalaman beserta skill terkait dalam satu query (mengatasi N+1)
+  const experiences = await query(`
+    SELECT
+      e.*,
+      GROUP_CONCAT(s.id) as skill_ids,
+      GROUP_CONCAT(s.label) as skill_labels
+    FROM experience e
+    LEFT JOIN experience_skills es ON e.id = es.experience_id
+    LEFT JOIN skills s ON es.skill_id = s.id
+    GROUP BY e.id
+    ORDER BY e.display_order ASC, e.created_at DESC
+  `);
+
+  return experiences.map(exp => ({
+    ...exp,
+    skill_ids: exp.skill_ids ? exp.skill_ids.split(',').map(id => parseInt(id)) : [],
+    technologies: exp.skill_labels ? exp.skill_labels.split(',') : []
+  }));
 }
 
 async function getExperienceSkills(experienceId) {
@@ -379,7 +401,7 @@ async function updateExperienceSkills(experienceId, skillIds) {
 
 // Skills Management
 async function getSkills() {
-  return await query('SELECT * FROM skills ORDER BY `order` ASC, label ASC');
+  return await query('SELECT * FROM skills WHERE archived = 0 ORDER BY `order` ASC, label ASC');
 }
 
 async function createSkill(skillData) {
@@ -607,7 +629,7 @@ export {
   getExperiences,
   getExperienceById,
   getExperiencesWithSkills,
-  getExperienceSkills,
+  getExperienceSkills, 
   updateExperienceSkills,
   getSkills,
   createSkill,

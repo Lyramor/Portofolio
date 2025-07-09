@@ -24,12 +24,8 @@ export default function Lanyard({ position = [0, 0, 30], gravity = [0, -40, 0], 
       >
         <ambientLight intensity={Math.PI} />
         <Physics gravity={gravity} timeStep={1 / 60}>
-          {/* Menambahkan Suspense untuk indikator loading */}
-          <Suspense fallback={
-            <Html center>
-              <div className="text-sky-400 text-lg">Loading Lanyard...</div>
-            </Html>
-          }>
+          {/* Menghilangkan Suspense fallback agar tidak menampilkan pesan loading */}
+          <Suspense fallback={null}> {/* MODIFIKASI: Fallback diubah menjadi null */}
             <Band />
           </Suspense>
         </Physics>
@@ -160,10 +156,9 @@ function Band({ maxSpeed = 50, minSpeed = 0 }) {
           useMap
           map={texture}
           repeat={[-4, 1]}
-          lineWidth={0.8} // Mengurangi lebar garis sedikit
-          // Tambahkan properti ini untuk membantu rendering lintas browser
-          alphaTest={0.5} // Ambang batas untuk rendering transparan
-          transparent={true} // Pastikan material transparan diaktifkan
+          lineWidth={0.8} 
+          alphaTest={0.5}
+          transparent={true} 
         />
       </mesh>
     </>
