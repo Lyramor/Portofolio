@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid'; // Pastikan untuk menginstal uuid dengan npm
 import { mkdir } from 'fs/promises';
 export const dynamic = 'force-dynamic';
 
@@ -18,30 +18,32 @@ export async function POST(request) {
     // Get file data
     const buffer = Buffer.from(await file.arrayBuffer());
     
-    // Generate unique filename with more precision
+    // Get file type and generate unique name
     const originalName = file.name;
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    let fileName = `${timestamp}-${randomStr}`;
+    let fileName = `${uuidv4()}`;
     
-    // Handle file extensions
+    // Handle file extensions properly, especially for SVG
     const fileType = file.type;
     let fileExtension;
     
+    // Fix for SVG files specifically
     if (fileType === 'image/svg+xml') {
-      fileExtension = '.svg';
+      fileExtension = '.svg'; // Always use .svg, not .svg+xml
     } else {
+      // For other file types, get extension from original name or mime type
       fileExtension = path.extname(originalName);
       if (!fileExtension) {
+        // Fallback to mime type if no extension in original name
         fileExtension = `.${fileType.split('/')[1]}`;
       }
     }
     
+    // Final filename with correct extension
     fileName = fileName + fileExtension;
     
-    // Determine folder based on referer
+    // Determine upload directory based on referer (TAMBAHAN INI)
     const referer = request.headers.get('referer') || '';
-    let uploadSubDir = 'skills';
+    let uploadSubDir = 'skills'; // Default to skills
     
     if (referer.includes('/projects')) {
       uploadSubDir = 'projects';
@@ -49,47 +51,31 @@ export async function POST(request) {
     
     // Ensure upload directory exists
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', uploadSubDir);
-    await mkdir(uploadDir, { recursive: true });
+    try {
+      await mkdir(uploadDir, { recursive: true });
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
+    }
     
+    // File path with correct extension
     const filePath = path.join(uploadDir, fileName);
     
-    // Write file to disk with verification
+    // Write file to disk
     fs.writeFileSync(filePath, buffer);
     
-    // Verify file was actually written
-    let retries = 3;
-    while (retries > 0 && !fs.existsSync(filePath)) {
-      console.log(`Retry ${4 - retries}: File not found, waiting...`);
-      await new Promise(resolve => setTimeout(resolve, 100));
-      retries--;
-    }
-    
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`File verification failed: ${filePath}`);
-    }
-    
-    // Verify file size matches
-    const writtenStats = fs.statSync(filePath);
-    if (writtenStats.size !== buffer.length) {
-      throw new Error(`File size mismatch: expected ${buffer.length}, got ${writtenStats.size}`);
-    }
-    
+    // Generate URL for the uploaded file - path that will be saved in database
     const imageUrl = `/uploads/${uploadSubDir}/${fileName}`;
     
-    console.log(`File successfully uploaded and verified: ${filePath}`);
-    console.log(`Image URL: ${imageUrl}, Size: ${writtenStats.size} bytes`);
+    // Log success for debugging
+    console.log(`File successfully uploaded to: ${filePath}`);
+    console.log(`Image URL saved in database will be: ${imageUrl}`);
     
     return NextResponse.json({ 
       success: true, 
-      imageUrl: imageUrl,
-      fileName: fileName,
-      size: writtenStats.size
+      imageUrl: imageUrl
     });
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({ 
-      error: 'File upload failed', 
-      details: error.message 
-    }, { status: 500 });
+    return NextResponse.json({ error: 'File upload failed' }, { status: 500 });
   }
 }
