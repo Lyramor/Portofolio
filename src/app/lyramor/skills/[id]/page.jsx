@@ -154,6 +154,7 @@ export default function EditSkillPage({ params }) {
 
           const uploadRes = await fetch('/api/admin/upload', {
             method: 'POST',
+          credentials: 'include',
             body: imageFormData,
           });
 

@@ -104,6 +104,7 @@ export default function NewSkillPage() {
 
         const uploadRes = await fetch('/api/admin/upload', {
           method: 'POST',
+          credentials: 'include',
           body: imageFormData,
         });
 
@@ -120,6 +121,7 @@ export default function NewSkillPage() {
 
       const res = await fetch('/api/admin/skills', {
         method: 'POST',
+          credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
