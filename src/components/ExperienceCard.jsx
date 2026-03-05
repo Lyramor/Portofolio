@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 export default function ExperienceCard({ period, position, company, description, technologies }) {
   return (
     <div className="experience-card">
-      <div className="lg:grid lg:grid-cols-[170px_1fr] gap-12">
+      <div className="lg:grid lg:grid-cols-[275px_1fr] gap-12">
         <div className="period-container mb-4 lg:mb-0">
           <h3 className="text-xl font-bold text-zinc-300">{period}</h3>
         </div>
@@ -20,9 +20,10 @@ export default function ExperienceCard({ period, position, company, description,
             <h3 className="text-2xl font-bold text-zinc-50">{position} - <span className="text-sky-400">{company}</span></h3>
           </div>
           
-          <p className="mb-5 text-zinc-300 text-lg">
-            {description}
-          </p>
+          <div
+            className="mb-5 text-zinc-300 text-lg trix-content"
+            dangerouslySetInnerHTML={{ __html: description || '' }}
+          />
           
           <div className="flex flex-wrap gap-2">
             {technologies.map((tech, index) => (

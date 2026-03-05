@@ -22,22 +22,25 @@ export async function GET() {
     const skillsCount = await query('SELECT COUNT(*) as count FROM skills');
     const aboutCount = await query('SELECT COUNT(*) as count FROM about');
     const experienceCount = await query('SELECT COUNT(*) as count FROM experience');
-    
-    // Perubahan di sini: Ambil nilai 'number' dari tabel counter_projects dan counter_experience
+    const organizationsCount = await query('SELECT COUNT(*) as count FROM organizations');
+    const speakingCount = await query('SELECT COUNT(*) as count FROM speaking');
+    const awardsCount = await query('SELECT COUNT(*) as count FROM awards');
+
     const [counterProjects] = await query('SELECT number FROM counter_projects LIMIT 1');
     const [counterExperience] = await query('SELECT number FROM counter_experience LIMIT 1');
-    
     const usersCount = await query('SELECT COUNT(*) as count FROM users');
 
-    return NextResponse.json({ 
-      projects: projectsCount[0].count, 
-      skills: skillsCount[0].count, 
-      about: aboutCount[0].count, 
-      experience: experienceCount[0].count, 
-      // Gunakan nilai 'number' dari query di atas, default ke 0 jika tidak ada record
-      counterProjects: counterProjects?.number || 0, 
-      counterExperience: counterExperience?.number || 0, 
-      users: usersCount[0].count 
+    return NextResponse.json({
+      projects: projectsCount[0].count,
+      skills: skillsCount[0].count,
+      about: aboutCount[0].count,
+      experience: experienceCount[0].count,
+      organizations: organizationsCount[0].count,
+      speaking: speakingCount[0].count,
+      awards: awardsCount[0].count,
+      counterProjects: counterProjects?.number || 0,
+      counterExperience: counterExperience?.number || 0,
+      users: usersCount[0].count
     });
   } catch (error) {
     console.error('Error retrieving dashboard stats:', error);

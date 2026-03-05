@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image'; // Add this
-import { 
-  FiCode, 
-  FiSave, 
-  FiX, 
+import {
+  FiCode,
+  FiSave,
+  FiX,
   FiLoader,
   FiAlertCircle,
   FiUpload,
@@ -219,17 +218,11 @@ export default function NewSkillPage() {
                   Enter the URL of the skill icon or logo (SVG recommended).
                 </p>
                 {formData.imgSrc && (
-                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center relative"> {/* Add relative here */}
-                    <Image // Change <img>
-                      src={formData.imgSrc} 
-                      alt="Image URL Preview" 
-                      fill // Use fill
-                      style={{ objectFit: 'contain' }} // Set objectFit
-                      onError={(e) => { 
-                        // next/image does not use onError like an <img> tag,
-                        // you need to handle fallback in the wrapper component
-                        // or provide a fallback image directly in src
-                      }}
+                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center h-24">
+                    <img
+                      src={formData.imgSrc}
+                      alt="Image URL Preview"
+                      className="max-h-full max-w-full object-contain"
                     />
                   </div>
                 )}
@@ -240,14 +233,13 @@ export default function NewSkillPage() {
                   Upload Image
                 </label>
                 <div className="mt-1 flex items-center">
-                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative"> {/* Add relative here */}
+                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative">
                     {imagePreview ? (
                       <div className="w-full flex flex-col items-center">
-                        <Image // Change <img>
-                          src={imagePreview} 
-                          alt="Upload Preview" 
-                          fill // Use fill
-                          style={{ objectFit: 'contain' }} // Set objectFit
+                        <img
+                          src={imagePreview}
+                          alt="Upload Preview"
+                          className="max-h-40 max-w-full object-contain"
                         />
                         <span className="mt-2 text-base">Click to change image</span>
                       </div>

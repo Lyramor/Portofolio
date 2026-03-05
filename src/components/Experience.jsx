@@ -4,45 +4,15 @@
  */
 'use client'
 
-import React, { useState, useEffect } from 'react'; 
+import React, { useState } from 'react';
 import ExperienceCard from './ExperienceCard';
-import { FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
-// Menerima props yang sudah diambil dari server
+const INITIAL_COUNT = 3;
+
 export default function Experience({ experienceData }) {
-  // Hapus state untuk menyimpan data pengalaman, status loading, dan error
-  // const [experienceData, setExperienceData] = useState([]);
-  const [loading, setLoading] = useState(false); // Tidak perlu loading di sini lagi untuk data utama
-  const [error, setError] = useState(null); // Tidak perlu error di sini lagi untuk data utama
+  const [showAll, setShowAll] = useState(false);
 
-  // Hapus useEffect untuk fetching data, karena data sudah ada di props
-  // useEffect(() => { /* ... logika fetching ... */ }, []); 
-
-  // Tampilkan loading state (hanya jika ada loading tambahan di masa depan)
-  if (loading) {
-    return (
-      <section id="experience" className="section bg-gradient-to-b from-zinc-900 to-zinc-950">
-        <div className="experience-container flex justify-center items-center h-48">
-          <FiLoader className="w-8 h-8 animate-spin text-sky-400" />
-          <p className="ml-3 text-zinc-400">Loading experiences...</p>
-        </div>
-      </section>
-    );
-  }
-
-  // Tampilkan error state (hanya jika ada error tambahan di masa depan)
-  if (error) {
-    return (
-      <section id="experience" className="section bg-gradient-to-b from-zinc-900 to-zinc-950">
-        <div className="experience-container text-center py-12 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center gap-3">
-          <FiAlertCircle size={24} />
-          <p>{error}</p>
-        </div>
-      </section>
-    );
-  }
-
-  // Tampilkan pesan jika tidak ada data pengalaman
   if (experienceData.length === 0) {
     return (
       <section id="experience" className="section bg-gradient-to-b from-zinc-900 to-zinc-950">
@@ -53,29 +23,80 @@ export default function Experience({ experienceData }) {
     );
   }
 
-  // Tampilkan daftar pengalaman jika data sudah berhasil diambil dan ada
+  const visible = experienceData.slice(0, INITIAL_COUNT);
+  const hidden = experienceData.slice(INITIAL_COUNT);
+  const hasMore = hidden.length > 0;
+
   return (
-    <section 
-      id="experience" 
+    <section
+      id="experience"
       className="section bg-gradient-to-b from-zinc-900 to-zinc-950"
     >
       <div className="experience-container">
-        <h2 className="headline-2 mb-10 text-center">
-          Experience
-        </h2>
+        <h2 className="headline-2 mb-10 text-center">Experience</h2>
 
+        {/* Always-visible first 3 */}
         <div className="flex flex-col gap-10">
-          {experienceData.map((experience, index) => (
-            <ExperienceCard 
-              key={experience.id} 
+          {visible.map((experience) => (
+            <ExperienceCard
+              key={experience.id}
               period={experience.period}
               position={experience.position}
               company={experience.company}
               description={experience.description}
-              technologies={experience.technologies || []} 
+              technologies={experience.technologies || []}
             />
           ))}
         </div>
+
+        {/* Expandable extra items */}
+        {hasMore && (
+          <div
+            style={{
+              maxHeight: showAll ? `${hidden.length * 600}px` : '0px',
+              opacity: showAll ? 1 : 0,
+              overflow: 'hidden',
+              transition: 'max-height 0.6s ease, opacity 0.35s ease',
+            }}
+          >
+            <div className="flex flex-col gap-10 mt-10">
+              {hidden.map((experience, index) => (
+                <div
+                  key={experience.id}
+                  style={{
+                    opacity: showAll ? 1 : 0,
+                    transform: showAll ? 'translateY(0)' : 'translateY(24px)',
+                    transition: `opacity 0.4s ease ${0.1 + index * 0.1}s, transform 0.4s ease ${0.1 + index * 0.1}s`,
+                  }}
+                >
+                  <ExperienceCard
+                    period={experience.period}
+                    position={experience.position}
+                    company={experience.company}
+                    description={experience.description}
+                    technologies={experience.technologies || []}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* See More / Show Less button */}
+        {hasMore && (
+          <div className="flex justify-center mt-10">
+            <button
+              onClick={() => setShowAll((prev) => !prev)}
+              className="flex items-center gap-2 px-6 py-3 border border-sky-500 text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors font-medium"
+            >
+              {showAll ? (
+                <>Show Less <FiChevronUp size={18} /></>
+              ) : (
+                <>See More <FiChevronDown size={18} /></>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

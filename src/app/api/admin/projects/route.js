@@ -87,20 +87,25 @@ export async function POST(request) {
     }
 
     let imagePath = null;
+    const imageUrlField = formData.get('image_url');
     const image = formData.get('image');
-    
-    if (image && image.size > 0) {
+
+    if (imageUrlField !== null && imageUrlField) {
+      // Image already uploaded via /api/admin/upload, use the URL directly
+      imagePath = imageUrlField;
+    } else if (image && image.size > 0) {
+      // Legacy file upload fallback
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
+
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'projects');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
-      
+
       const fileName = `${Date.now()}-${image.name.replace(/\s+/g, '-')}`;
       const filePath = path.join(uploadDir, fileName);
-      
+
       fs.writeFileSync(filePath, buffer);
       imagePath = `/uploads/projects/${fileName}`;
     }

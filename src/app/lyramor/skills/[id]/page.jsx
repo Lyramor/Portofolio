@@ -3,15 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image'; // Tambahkan ini
-import { 
-  FiCode, 
-  FiSave, 
-  FiX, 
+import {
+  FiCode,
+  FiSave,
+  FiX,
   FiLoader,
   FiAlertCircle,
   FiUpload,
-  FiImage,
   FiTrash2
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
@@ -154,7 +152,7 @@ export default function EditSkillPage({ params }) {
 
           const uploadRes = await fetch('/api/admin/upload', {
             method: 'POST',
-          credentials: 'include',
+            credentials: 'include',
             body: imageFormData,
           });
 
@@ -166,7 +164,8 @@ export default function EditSkillPage({ params }) {
           const imageData = await uploadRes.json();
           finalImgSrc = imageData.imageUrl;
         } else {
-          finalImgSrc = null; 
+          // No new file selected — keep the existing stored image path
+          finalImgSrc = formData.imgSrc || null;
         }
       }
 
@@ -280,13 +279,11 @@ export default function EditSkillPage({ params }) {
                   Enter the URL of the skill icon or logo (SVG recommended).
                 </p>
                 {formData.imgSrc && (
-                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center relative"> {/* Tambahkan relative */}
-                    <Image // Ganti <img>
-                      src={formData.imgSrc} 
-                      alt="Image URL Preview" 
-                      fill // Gunakan fill
-                      style={{ objectFit: 'contain' }} // Atur objectFit
-                      // onError tidak perlu lagi
+                  <div className="mt-4 p-2 bg-zinc-900 rounded-md border border-zinc-700 flex justify-center items-center h-24">
+                    <img
+                      src={formData.imgSrc}
+                      alt="Image URL Preview"
+                      className="max-h-full max-w-full object-contain"
                     />
                   </div>
                 )}
@@ -297,14 +294,13 @@ export default function EditSkillPage({ params }) {
                   Upload Image
                 </label>
                 <div className="mt-1 flex items-center">
-                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative"> {/* Tambahkan relative */}
+                  <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative">
                     {imagePreview ? (
                       <div className="w-full flex flex-col items-center">
-                        <Image // Ganti <img>
-                          src={imagePreview} 
-                          alt="Upload Preview" 
-                          fill // Gunakan fill
-                          style={{ objectFit: 'contain' }} // Atur objectFit
+                        <img
+                          src={imagePreview}
+                          alt="Upload Preview"
+                          className="max-h-40 max-w-full object-contain"
                         />
                         <span className="mt-2 text-base">Click to change image</span>
                       </div>

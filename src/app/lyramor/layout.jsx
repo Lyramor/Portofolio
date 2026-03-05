@@ -15,7 +15,10 @@ import {
   FiLogOut,
   FiInfo,
   FiBriefcase,
-  FiLink
+  FiLink,
+  FiUsers,
+  FiMic,
+  FiAward
 } from 'react-icons/fi';
 
 export default function AdminLayout({ children }) {
@@ -66,6 +69,9 @@ export default function AdminLayout({ children }) {
     { name: 'Skills', path: '/lyramor/skills', icon: <FiCode size={18} /> },
     { name: 'Experience', path: '/lyramor/experience', icon: <FiBriefcase size={18} /> },
     { name: 'Projects', path: '/lyramor/projects', icon: <FiGrid size={18} /> },
+    { name: 'Organizations', path: '/lyramor/organizations', icon: <FiUsers size={18} /> },
+    { name: 'Speaking', path: '/lyramor/speaking', icon: <FiMic size={18} /> },
+    { name: 'Awards', path: '/lyramor/awards', icon: <FiAward size={18} /> },
   ];
 
   return (

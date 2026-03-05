@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiSave, FiX, FiLoader, FiAlertCircle, FiTag } from 'react-icons/fi';
-import SkillsSelector from '@/components/admin/SkillsSelector'; 
+import SkillsSelector from '@/components/admin/SkillsSelector';
+import TrixEditor from '@/components/admin/TrixEditor';
 
 export default function NewExperience() {
   const router = useRouter();
@@ -137,17 +138,13 @@ export default function NewExperience() {
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2" htmlFor="description">
+          <label className="block text-sm font-medium mb-2">
             Description
           </label>
-          <textarea
-            id="description"
-            name="description"
-            rows="4"
-            placeholder="Describe your responsibilities and achievements"
+          <TrixEditor
+            inputId="exp-new-description"
             value={formData.description}
-            onChange={handleChange}
-            className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+            onChange={(html) => setFormData(prev => ({ ...prev, description: html }))}
           />
         </div>
 

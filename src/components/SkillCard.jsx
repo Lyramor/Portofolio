@@ -6,18 +6,22 @@
 'use client'
 
 import PropTypes from "prop-types"
-import Image from 'next/image';
 
 export default function SkillCard({imgSrc, label, desc, classes}) {
   return (
     <div className={'flex items-center gap-3 ring-2 ring-inset ring-zinc-50/10 rounded-2xl p-3 hover:bg-zinc-800 transition-colors group ' + classes}>
-      <figure className="bg-slate-700/50 rounded-lg overflow-hidden w-12 h-12 p-2 group-hover:bg-zinc-900 transition-colors">
-        <Image 
-          src={imgSrc}
-          width={48} 
-          height={48} 
-          alt={label}
-        />
+      <figure className="bg-slate-700/50 rounded-lg overflow-hidden w-12 h-12 p-2 group-hover:bg-zinc-900 transition-colors flex items-center justify-center">
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            width={48}
+            height={48}
+            alt={label}
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <span className="text-zinc-400 text-sm font-bold">{label.charAt(0)}</span>
+        )}
       </figure>
 
       <div>

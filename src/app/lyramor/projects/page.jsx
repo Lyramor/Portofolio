@@ -110,7 +110,10 @@ const ProjectItem = ({ project, index, moveProject, confirmDelete, handleToggleA
             {project.title} {project.archived && <span className="text-sm text-zinc-600">(Archived)</span>}
           </h3> 
           {project.description && (
-            <p className="text-zinc-400 mb-3 line-clamp-2">{project.description}</p> 
+            <div
+              className="text-zinc-400 mb-3 line-clamp-2 text-sm trix-content"
+              dangerouslySetInnerHTML={{ __html: project.description }}
+            />
           )}
 
           {project.skill_labels && project.skill_labels.length > 0 && ( 

@@ -1,130 +1,64 @@
-// src/app/lyramor/projects/new/page.jsx
 'use client';
+// src/app/lyramor/projects/new/page.jsx
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image'; // Tambahkan ini
-import { 
-  FiBriefcase, 
-  FiSave, 
-  FiX, 
+import {
+  FiBriefcase,
+  FiSave,
+  FiX,
   FiLoader,
   FiAlertCircle,
-  FiUpload,
-  FiImage,
   FiTag,
-  FiTrash2,
   FiLink
 } from 'react-icons/fi';
 import SkillsSelector from '@/components/admin/SkillsSelector';
+import TrixEditor from '@/components/admin/TrixEditor';
+import ImageUploader from '@/components/admin/ImageUploader';
 import { toast } from 'react-hot-toast';
 
 export default function NewProjectPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    link: '',
-  });
+
+  const [formData, setFormData] = useState({ title: '', description: '', link: '' });
   const [selectedSkills, setSelectedSkills] = useState([]);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null); 
+  const [imageUrl, setImageUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-
-  const handleSkillsChange = (skills) => {
-    setSelectedSkills(skills);
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      if (!imageFile) { 
-        setImageFile(null);
-        setImagePreview(null);
-      }
-      return;
-    }
-
-    setError(null); 
-
-    if (!file.type.includes('image/')) {
-      setError('Please select an image file (PNG, JPEG, GIF, SVG, etc.).');
-      setImageFile(null);
-      setImagePreview(null);
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Image size should be less than 2MB.');
-      setImageFile(null);
-      setImagePreview(null);
-      return;
-    }
-
-    setImageFile(file);
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target.result);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleClearImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    setError(null); 
-  };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.title.trim()) {
+      setError('Project title is required.');
+      return;
+    }
     setError(null);
     setSaving(true);
 
-    if (!formData.title.trim()) {
-      setError('Project title is required.');
-      setSaving(false);
-      return;
-    }
-
     try {
-      const formDataToSubmit = new FormData();
-      formDataToSubmit.append('title', formData.title);
-      formDataToSubmit.append('description', formData.description);
-      formDataToSubmit.append('link', formData.link);
-      
-      formDataToSubmit.append('skills', JSON.stringify(selectedSkills));
-      
-      if (imageFile) {
-        formDataToSubmit.append('image', imageFile);
-      }
+      const fd = new FormData();
+      fd.append('title', formData.title);
+      fd.append('description', formData.description);
+      fd.append('link', formData.link);
+      fd.append('skills', JSON.stringify(selectedSkills));
+      fd.append('image_url', imageUrl);
 
-      const res = await fetch('/api/admin/projects', { 
-        method: 'POST',
-        body: formDataToSubmit,
-      });
-
+      const res = await fetch('/api/admin/projects', { method: 'POST', body: fd });
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to create project.');
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to create project.');
       }
 
       toast.success('Project created successfully!');
-      router.push('/lyramor/projects'); 
-      router.refresh(); 
+      router.push('/lyramor/projects');
+      router.refresh();
     } catch (err) {
-      console.error('Error creating project:', err);
-      setError(err.message || 'Failed to create project. Please try again.');
+      setError(err.message);
       toast.error('Failed to create project');
     } finally {
       setSaving(false);
@@ -140,138 +74,56 @@ export default function NewProjectPage() {
 
       {error && (
         <div className="bg-red-500/20 text-red-400 p-4 rounded-lg mb-6 flex items-center">
-          <FiAlertCircle className="mr-2" size={18} />
-          {error}
+          <FiAlertCircle className="mr-2" size={18} />{error}
         </div>
       )}
 
       <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <label htmlFor="title" className="block text-sm font-medium text-zinc-300 mb-2">
-              Project Title *
-            </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-zinc-300 mb-2">Project Title *</label>
+            <input type="text" id="title" name="title" value={formData.title} onChange={handleChange} required
               placeholder="e.g., Portfolio Website, E-commerce App"
-              required
-            />
+              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" />
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="description" className="block text-sm font-medium text-zinc-300 mb-2">
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows="4"
-              className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-              placeholder="Brief description of your project"
-            />
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Description</label>
+            <TrixEditor inputId="proj-new-description" value={formData.description}
+              onChange={(html) => setFormData(prev => ({ ...prev, description: html }))} />
           </div>
 
-          <div className="mb-6">
+          <div>
             <label htmlFor="link" className="block text-sm font-medium text-zinc-300 mb-2 flex items-center">
-              <FiLink className="mr-2" size={16} />
-              Project Link
+              <FiLink className="mr-2" size={16} />Project Link
             </label>
-            <input
-              type="url"
-              id="link"
-              name="link"
-              value={formData.link}
-              onChange={handleChange}
-              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+            <input type="url" id="link" name="link" value={formData.link} onChange={handleChange}
               placeholder="e.g., https://yourproject.com"
-            />
-            <p className="text-zinc-500 text-sm mt-2">Optional: URL to the live project or repository.</p>
+              className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" />
+            <p className="text-zinc-500 text-sm mt-1">Optional: URL to the live project or repository.</p>
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="imageUpload" className="block text-sm font-medium text-zinc-300 mb-2">
-              Project Image
-            </label>
-            <div className="mt-1 flex flex-col items-center">
-              <label className="w-full flex flex-col items-center px-4 py-6 bg-zinc-900 text-zinc-500 rounded-lg tracking-wide border border-zinc-700 cursor-pointer hover:bg-zinc-800 transition-colors relative"> {/* Tambahkan relative di sini */}
-                {imagePreview ? (
-                  <div className="w-full flex flex-col items-center">
-                    <Image // Ganti <img>
-                      src={imagePreview} 
-                      alt="Preview" 
-                      fill // Gunakan fill
-                      style={{ objectFit: 'contain' }} // Atur objectFit
-                      // className="h-32 object-contain" tidak perlu jika pakai fill
-                    />
-                    <span className="mt-4 text-sm">Click to change image</span>
-                  </div>
-                ) : (
-                  <>
-                    <FiUpload className="w-8 h-8" />
-                    <span className="mt-2 text-base">Select an image</span>
-                  </>
-                )}
-                <input 
-                  id="imageUpload" 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-                {imagePreview && (
-                    <button
-                        type="button"
-                        onClick={handleClearImage}
-                        className="absolute top-2 right-2 p-2 bg-red-600/70 text-white rounded-full hover:bg-red-700/70 transition-colors"
-                        title="Clear Image"
-                    >
-                        <FiTrash2 size={16} />
-                    </button>
-                )}
-              </label>
-            </div>
-            <p className="text-zinc-500 text-sm mt-2">
-              Max file size: 2MB. Recommended formats: PNG, JPEG, SVG, GIF.
-            </p>
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Project Image</label>
+            <ImageUploader value={imageUrl} onChange={setImageUrl} />
+            <p className="text-zinc-500 text-sm mt-1">Max 2MB. PNG, JPEG, SVG, GIF, WebP.</p>
           </div>
 
-          <div className="mb-6">
+          <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2 flex items-center">
-              <FiTag className="mr-2" size={16} />
-              Skills Used
+              <FiTag className="mr-2" size={16} />Skills Used
             </label>
-            <SkillsSelector 
-              selectedSkills={selectedSkills} 
-              onChange={handleSkillsChange} 
-            />
+            <SkillsSelector selectedSkills={selectedSkills} onChange={setSelectedSkills} />
           </div>
 
-          <div className="flex justify-end gap-4 mt-8">
-            <Link
-              href="/lyramor/projects"
-              className="px-4 py-2 border border-zinc-600 rounded-lg hover:bg-zinc-700 transition-colors flex items-center gap-2"
-            >
-              <FiX size={18} />
-              <span>Cancel</span>
+          <div className="flex justify-end gap-4">
+            <Link href="/lyramor/projects"
+              className="px-4 py-2 border border-zinc-600 rounded-lg hover:bg-zinc-700 transition-colors flex items-center gap-2">
+              <FiX size={18} /><span>Cancel</span>
             </Link>
-            
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
-            >
-              {saving ? (
-                <FiLoader className="animate-spin" size={18} />
-              ) : (
-                <FiSave size={18} />
-              )}
+            <button type="submit" disabled={saving}
+              className="bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50">
+              {saving ? <FiLoader className="animate-spin" size={18} /> : <FiSave size={18} />}
               <span>Save Project</span>
             </button>
           </div>

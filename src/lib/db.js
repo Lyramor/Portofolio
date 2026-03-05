@@ -160,12 +160,56 @@ async function initializeDatabase() {
       )
     `);
 
+    // Organizations table
+    await query(`
+      CREATE TABLE IF NOT EXISTS organizations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        role VARCHAR(255) NOT NULL,
+        organization VARCHAR(255) NOT NULL,
+        period VARCHAR(100) NOT NULL,
+        description TEXT,
+        display_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Speaking & Invitations table
+    await query(`
+      CREATE TABLE IF NOT EXISTS speaking (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event VARCHAR(255) NOT NULL,
+        organizer VARCHAR(255),
+        role VARCHAR(255),
+        description TEXT,
+        display_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Awards table
+    await query(`
+      CREATE TABLE IF NOT EXISTS awards (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        issuer VARCHAR(255),
+        year VARCHAR(10),
+        description TEXT,
+        display_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
 
     console.log('Database initialized successfully');
     await migrateExperienceTechnologies();
     await migrateSkillDescription(); // Panggil migrasi untuk deskripsi skill
     await addOrderAndArchivedToSkills(); // Panggil migrasi untuk kolom order dan archived di skills
     await addOrderAndArchivedToProjects(); // Panggil migrasi untuk kolom order dan archived di projects
+    await migrateActivitiesImageUrl(); // Tambah image_url ke organizations & speaking
+    await migrateSkillDescriptionsToEnglish(); // Update Indonesian skill descriptions to English
 
   } catch (error) {
     console.error('Failed to initialize database:', error);
@@ -173,11 +217,47 @@ async function initializeDatabase() {
   }
 }
 
+async function migrateActivitiesImageUrl() {
+  try {
+    const orgCols = await query('SHOW COLUMNS FROM organizations LIKE "image_url"');
+    if (orgCols.length === 0) {
+      await query('ALTER TABLE organizations ADD COLUMN image_url VARCHAR(500) NULL');
+      console.log('✅ Added image_url to organizations');
+    }
+    const spkCols = await query('SHOW COLUMNS FROM speaking LIKE "image_url"');
+    if (spkCols.length === 0) {
+      await query('ALTER TABLE speaking ADD COLUMN image_url VARCHAR(500) NULL');
+      console.log('✅ Added image_url to speaking');
+    }
+  } catch (error) {
+    console.error('Error migrating activities image_url:', error);
+  }
+}
+
+async function migrateSkillDescriptionsToEnglish() {
+  try {
+    const updates = [
+      { old: 'Bahasa pemrograman inti untuk web interaktif.', new: 'Core programming language for building interactive web applications.' },
+      { old: 'Pustaka JavaScript untuk membangun antarmuka pengguna.', new: 'JavaScript library for building dynamic user interfaces.' },
+      { old: 'Lingkungan runtime JavaScript sisi server.', new: 'Server-side JavaScript runtime environment.' },
+      { old: 'Sistem manajemen database relasional populer.', new: 'Popular open-source relational database management system.' },
+      { old: 'Bahasa markup standar untuk membuat halaman web.', new: 'Standard markup language for creating web pages.' },
+      { old: 'Bahasa stylesheet untuk mendesain tampilan web.', new: 'Stylesheet language for designing and styling web layouts.' },
+    ];
+    for (const u of updates) {
+      await query('UPDATE skills SET description = ? WHERE description = ?', [u.new, u.old]);
+    }
+    console.log('✅ Skill descriptions migrated to English');
+  } catch (error) {
+    console.error('Error migrating skill descriptions:', error);
+  }
+}
+
 // Create an admin user and seed initial data
 async function seedAdminUser() {
   try {
     const [users] = await query('SELECT COUNT(*) as count FROM users');
-    if (users[0].count === 0) {
+    if (users.count === 0) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('cipanas12345', salt);
 
@@ -189,7 +269,11 @@ async function seedAdminUser() {
     }
 
     await seedAboutContent();
+    await seedExperience();
     await seedSkills();
+    await seedOrganizations();
+    await seedSpeaking();
+    await seedAwards();
   } catch (error) {
     console.error('❌ Failed to seed initial data:', error);
     throw error;
@@ -199,10 +283,10 @@ async function seedAdminUser() {
 async function seedAboutContent() {
   try {
     const [about] = await query('SELECT COUNT(*) as count FROM about');
-    if (about[0].count === 0) {
+    if (about.count === 0) {
       await query(
         'INSERT INTO about (content) VALUES (?)',
-        ["Welcome! I'm Marsa, a junior web developer..."]
+        ["As an Informatics Engineering student with a strong interest in both web development and data science, I am dedicated to building engaging and responsive interfaces, as well as developing analytical and predictive solutions. I am committed to continuously learning and honing my skills in both of these fields, and I am actively seeking mentorship opportunities to accelerate my career development in the technology industry."]
       );
       console.log('✅ Initial about content created');
     }
@@ -211,17 +295,78 @@ async function seedAboutContent() {
   }
 }
 
+async function seedExperience() {
+  try {
+    const [row] = await query('SELECT COUNT(*) as count FROM experience');
+    if (row.count === 0) {
+      const experiences = [
+        {
+          period: 'February 2025 – Mei 2025',
+          position: 'Front-End Developer',
+          company: 'PT Solusi Komunikasi Terapan',
+          description: '<p>Tasked with rebuilding the company website after a cyber attack. I successfully developed and launched a new, more secure version to restore operations and prevent future threats.</p><ul><li>Responsible for the frontend development of two websites within a one-week timeframe.</li><li>Performed hosting and server activity monitoring to ensure the smooth operation of both websites.</li><li>Successfully completed the project within one week timeframe.</li></ul>',
+          display_order: 1,
+        },
+        {
+          period: 'January 2025 – January 2025',
+          position: 'Laboratory Assistant',
+          company: 'Informatics Engineering',
+          description: '<ul><li>Taught and mentored one class of students for the "Programming Practicum 1" course.</li><li>Served as a member of the grading team, responsible for evaluating assignments, quizzes, and final projects.</li><li>Assisted students with code debugging and reinforced their understanding of fundamental programming concepts.</li></ul>',
+          display_order: 2,
+        },
+        {
+          period: 'July 2025 – September 2025',
+          position: 'Front-End Developer',
+          company: 'Naramakna',
+          description: '<ul><li>Developed the front-end architecture using React, TypeScript, and Vite, structured around the Atomic Design principles.</li><li>Designed and implemented front-end components for article management and display.</li><li>Responsible for implementing core features such as external API integrations with YouTube and TikTok, the comment system, and ad management.</li></ul>',
+          display_order: 3,
+        },
+        {
+          period: 'July 2025 – September 2025',
+          position: 'Fullstack Developer',
+          company: 'Faculty of Engineering, Pasundan University',
+          description: '<ul><li>Developing a university website with a focus on modules.</li><li>Implementing the Whistleblower (Complaint) module, including functionalities for anonymous reporting, complaint category management, and a comment/history system.</li><li>Designing and building the Asset Management Module for Facilities and Infrastructure (Sarpra), including CRUD features for assets, buildings, and rooms.</li></ul>',
+          display_order: 4,
+        },
+        {
+          period: 'August 2025 – Present',
+          position: 'Front-End Developer',
+          company: 'PT Kunci',
+          description: '<ul><li>Design and develop a user interface for the Student Gamification module, which includes teacher-managed features.</li><li>Created a front-end component for teachers, allowing them to manage and organize gamification, such as creating missions, awarding points, and tracking student progress.</li><li>Develop an interactive and engaging interface for students so they can view their gamification profiles, achievements, rankings, and learning progress.</li></ul>',
+          display_order: 5,
+        },
+        {
+          period: 'September 2025 – Present',
+          position: 'Fullstack Developer',
+          company: 'PT Titik Terang',
+          description: '<ul><li>Delivered 5 web-based projects within 6 months as the sole Fullstack Developer, handling end-to-end development from system architecture design to production deployment.</li><li>Owned the DevOps lifecycle, including server configuration, CI/CD deployment, database management, version control, and ongoing system monitoring and maintenance.</li><li>Collaborated cross-functionally with UI/UX Designers and QA Testers to ensure high-quality, scalable, and user-centered solutions.</li><li>Implemented Scrum methodology, actively participating in sprint planning, daily stand-ups, backlog refinement, development cycles, and sprint retrospectives.</li></ul>',
+          display_order: 6,
+        },
+      ];
+      for (const exp of experiences) {
+        await query(
+          'INSERT INTO experience (period, position, company, description, display_order) VALUES (?, ?, ?, ?, ?)',
+          [exp.period, exp.position, exp.company, exp.description, exp.display_order]
+        );
+      }
+      console.log('✅ Initial experiences seeded');
+    }
+  } catch (error) {
+    console.error('Error seeding experience:', error);
+  }
+}
+
 async function seedSkills() {
   try {
     const [skills] = await query('SELECT COUNT(*) as count FROM skills');
-    if (skills[0].count === 0) {
+    if (skills.count === 0) {
       const defaultSkills = [
-        { label: 'JavaScript', imgSrc: '/images/skills/javascript.svg', description: 'Bahasa pemrograman inti untuk web interaktif.' },
-        { label: 'React', imgSrc: '/images/skills/react.svg', description: 'Pustaka JavaScript untuk membangun antarmuka pengguna.' },
-        { label: 'Node.js', imgSrc: '/images/skills/nodejs.svg', description: 'Lingkungan runtime JavaScript sisi server.' },
-        { label: 'MySQL', imgSrc: '/images/skills/mysql.svg', description: 'Sistem manajemen database relasional populer.' },
-        { label: 'HTML', imgSrc: '/images/skills/html.svg', description: 'Bahasa markup standar untuk membuat halaman web.' },
-        { label: 'CSS', imgSrc: '/images/skills/css.svg', description: 'Bahasa stylesheet untuk mendesain tampilan web.' }
+        { label: 'JavaScript', imgSrc: '/images/skills/javascript.svg', description: 'Core programming language for building interactive web applications.' },
+        { label: 'React', imgSrc: '/images/skills/react.svg', description: 'JavaScript library for building dynamic user interfaces.' },
+        { label: 'Node.js', imgSrc: '/images/skills/nodejs.svg', description: 'Server-side JavaScript runtime environment.' },
+        { label: 'MySQL', imgSrc: '/images/skills/mysql.svg', description: 'Popular open-source relational database management system.' },
+        { label: 'HTML', imgSrc: '/images/skills/html.svg', description: 'Standard markup language for creating web pages.' },
+        { label: 'CSS', imgSrc: '/images/skills/css.svg', description: 'Stylesheet language for designing and styling web layouts.' }
       ];
 
       for (const skill of defaultSkills) {
@@ -613,6 +758,203 @@ async function addOrderAndArchivedToProjects() {
 }
 
 
+// ─── Seed functions ───────────────────────────────────────────────────────────
+
+async function seedOrganizations() {
+  try {
+    const [row] = await query('SELECT COUNT(*) as count FROM organizations');
+    if (row.count === 0) {
+      const items = [
+        {
+          role: 'Creative Economy Staff',
+          organization: 'HMTIF, Pasundan University',
+          period: 'August 2024 – August 2025',
+          description: '<ul><li>Served as Project Leader for the "Seminar Entrepreneurship and Digital Marketing 2025", successfully attracting 70+ participants from students.</li><li>Managed and executed the organization\'s fundraising (danus) program, including product planning, sales strategy, and weekly distribution.</li><li>Achieved consistently strong weekly sales performance, with products frequently reaching sold-out status due to high demand.</li></ul>',
+          display_order: 1,
+        },
+        {
+          role: 'Web Curriculum Developer',
+          organization: 'GDGOC Pasundan University',
+          period: 'November 2024 – Present',
+          description: '<ul><li>Served as Project Leader for Creation Boost, a weekly web mentoring program attended by 100+ Universitas Pasundan students, aimed at strengthening practical development skills.</li><li>Led Creation Box, the culminating appreciation event of Creation Boost, recognizing outstanding student project submissions and top performers.</li><li>Delivered a Study Jam session as a Speaker on Basic PHP, attended by 30+ students, focusing on foundational backend development concepts and hands-on implementation.</li></ul>',
+          display_order: 2,
+        },
+      ];
+      for (const item of items) {
+        await query(
+          'INSERT INTO organizations (role, organization, period, description, display_order) VALUES (?, ?, ?, ?, ?)',
+          [item.role, item.organization, item.period, item.description, item.display_order]
+        );
+      }
+      console.log('✅ Initial organizations seeded');
+    }
+  } catch (error) {
+    console.error('Error seeding organizations:', error);
+  }
+}
+
+async function seedSpeaking() {
+  try {
+    const [row] = await query('SELECT COUNT(*) as count FROM speaking');
+    if (row.count === 0) {
+      const items = [
+        {
+          event: 'Expo Campus and Business World',
+          organizer: 'SMA Negeri 1 Sukaresmi',
+          role: 'Speaker',
+          description: 'Representing Jabar Future Leaders Scholarship (JFLS) awardees, sharing academic journey and scholarship insights with high school students.',
+          display_order: 1,
+        },
+        {
+          event: 'TIF CAST (Teknik Informatika Podcast)',
+          organizer: 'Informatics Engineering Department',
+          role: 'Guest Speaker',
+          description: 'Invited as a Guest Speaker as a JFLS Scholarship Recipient, discussing academic achievement, leadership experience, and scholarship opportunities.',
+          display_order: 2,
+        },
+      ];
+      for (const item of items) {
+        await query(
+          'INSERT INTO speaking (event, organizer, role, description, display_order) VALUES (?, ?, ?, ?, ?)',
+          [item.event, item.organizer, item.role, item.description, item.display_order]
+        );
+      }
+      console.log('✅ Initial speaking entries seeded');
+    }
+  } catch (error) {
+    console.error('Error seeding speaking:', error);
+  }
+}
+
+async function seedAwards() {
+  try {
+    const [row] = await query('SELECT COUNT(*) as count FROM awards');
+    if (row.count === 0) {
+      const items = [
+        {
+          title: 'Jabar Future Leader Regular Scholarship',
+          issuer: 'Pemerintah Provinsi Jawa Barat',
+          year: '2023',
+          description: 'Recipient of the Jabar Future Leader Scholarship (JFLS), a prestigious scholarship awarded by the West Java Provincial Government to outstanding students with strong academic and leadership potential.',
+          display_order: 1,
+        },
+        {
+          title: 'Copyright – Whistleblower (Sexual Violence Prevention & Reporting System in Higher Education)',
+          issuer: 'Direktorat Jenderal Kekayaan Intelektual, Kementerian Hukum Republik Indonesia',
+          year: '2026',
+          description: 'Registered copyright (Program Komputer) for the Whistleblower system — a web-based platform for reporting and handling sexual violence prevention in higher education environments. Registration No: 001131074 | EC002026022299, February 5, 2026. Valid for 50 years.',
+          display_order: 2,
+        },
+      ];
+      for (const item of items) {
+        await query(
+          'INSERT INTO awards (title, issuer, year, description, display_order) VALUES (?, ?, ?, ?, ?)',
+          [item.title, item.issuer, item.year, item.description, item.display_order]
+        );
+      }
+      console.log('✅ Initial awards seeded');
+    }
+  } catch (error) {
+    console.error('Error seeding awards:', error);
+  }
+}
+
+// ─── Organizations CRUD ───────────────────────────────────────────────────────
+
+async function getOrganizations() {
+  return await query('SELECT * FROM organizations ORDER BY display_order ASC, created_at ASC');
+}
+
+async function getOrganizationById(id) {
+  const rows = await query('SELECT * FROM organizations WHERE id = ?', [id]);
+  return rows[0] || null;
+}
+
+async function createOrganization(data) {
+  const result = await query(
+    'INSERT INTO organizations (role, organization, period, description, image_url, display_order) VALUES (?, ?, ?, ?, ?, ?)',
+    [data.role, data.organization, data.period, data.description || null, data.image_url || null, data.display_order || 0]
+  );
+  return result.insertId;
+}
+
+async function updateOrganization(id, data) {
+  await query(
+    'UPDATE organizations SET role=?, organization=?, period=?, description=?, image_url=?, display_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+    [data.role, data.organization, data.period, data.description || null, data.image_url || null, data.display_order || 0, id]
+  );
+  return true;
+}
+
+async function deleteOrganization(id) {
+  await query('DELETE FROM organizations WHERE id = ?', [id]);
+  return true;
+}
+
+// ─── Speaking CRUD ────────────────────────────────────────────────────────────
+
+async function getSpeaking() {
+  return await query('SELECT * FROM speaking ORDER BY display_order ASC, created_at ASC');
+}
+
+async function getSpeakingById(id) {
+  const rows = await query('SELECT * FROM speaking WHERE id = ?', [id]);
+  return rows[0] || null;
+}
+
+async function createSpeaking(data) {
+  const result = await query(
+    'INSERT INTO speaking (event, organizer, role, description, image_url, display_order) VALUES (?, ?, ?, ?, ?, ?)',
+    [data.event, data.organizer || null, data.role || null, data.description || null, data.image_url || null, data.display_order || 0]
+  );
+  return result.insertId;
+}
+
+async function updateSpeaking(id, data) {
+  await query(
+    'UPDATE speaking SET event=?, organizer=?, role=?, description=?, image_url=?, display_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+    [data.event, data.organizer || null, data.role || null, data.description || null, data.image_url || null, data.display_order || 0, id]
+  );
+  return true;
+}
+
+async function deleteSpeaking(id) {
+  await query('DELETE FROM speaking WHERE id = ?', [id]);
+  return true;
+}
+
+// ─── Awards CRUD ──────────────────────────────────────────────────────────────
+
+async function getAwards() {
+  return await query('SELECT * FROM awards ORDER BY display_order ASC, year DESC');
+}
+
+async function getAwardById(id) {
+  const rows = await query('SELECT * FROM awards WHERE id = ?', [id]);
+  return rows[0] || null;
+}
+
+async function createAward(data) {
+  const result = await query(
+    'INSERT INTO awards (title, issuer, year, description, display_order) VALUES (?, ?, ?, ?, ?)',
+    [data.title, data.issuer || null, data.year || null, data.description || null, data.display_order || 0]
+  );
+  return result.insertId;
+}
+
+async function updateAward(id, data) {
+  await query(
+    'UPDATE awards SET title=?, issuer=?, year=?, description=?, display_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
+    [data.title, data.issuer || null, data.year || null, data.description || null, data.display_order || 0, id]
+  );
+  return true;
+}
+
+async function deleteAward(id) {
+  await query('DELETE FROM awards WHERE id = ?', [id]);
+  return true;
+}
+
 // Named exports
 export {
   query,
@@ -640,7 +982,22 @@ export {
   updateExperienceCounter,
   getAbout,
   updateAbout,
-  getAdminStats
+  getAdminStats,
+  getOrganizations,
+  getOrganizationById,
+  createOrganization,
+  updateOrganization,
+  deleteOrganization,
+  getSpeaking,
+  getSpeakingById,
+  createSpeaking,
+  updateSpeaking,
+  deleteSpeaking,
+  getAwards,
+  getAwardById,
+  createAward,
+  updateAward,
+  deleteAward,
 };
 
 // Default export
@@ -670,7 +1027,22 @@ const db = {
   updateExperienceCounter,
   getAbout,
   updateAbout,
-  getAdminStats
+  getAdminStats,
+  getOrganizations,
+  getOrganizationById,
+  createOrganization,
+  updateOrganization,
+  deleteOrganization,
+  getSpeaking,
+  getSpeakingById,
+  createSpeaking,
+  updateSpeaking,
+  deleteSpeaking,
+  getAwards,
+  getAwardById,
+  createAward,
+  updateAward,
+  deleteAward,
 };
 
 export default db;

@@ -9,11 +9,11 @@ import { ButtonPrimary, ButtonOutline } from './Button';
 import Lanyard from './Lanyard/Lanyard';
 import RotatingText from './RotatingText/RotatingText';
 // Hapus import useState dan useEffect karena data akan diterima via props
-// import { useState, useEffect } from 'react'; 
+// import { useState, useEffect } from 'react';
 
 export default function Hero({ cvLink }) { // Menerima cvLink sebagai prop
   // Hapus state cvLink dan loadingCv, serta useEffect untuk fetching data
-  // const [cvLink, setCvLink] = useState(null); 
+  // const [cvLink, setCvLink] = useState(null);
   // const [loadingCv, setLoadingCv] = useState(true);
 
   // Hapus useEffect ini

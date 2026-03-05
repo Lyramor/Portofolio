@@ -45,6 +45,8 @@ export async function POST(request) {
     
     if (referer.includes('/projects')) {
       uploadSubDir = 'projects';
+    } else if (referer.includes('/organizations') || referer.includes('/speaking')) {
+      uploadSubDir = 'activities';
     }
     
     // Ensure upload directory exists

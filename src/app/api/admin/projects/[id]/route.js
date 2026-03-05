@@ -75,37 +75,52 @@ export async function PUT(request, { params }) {
     }
 
     let imagePath = currentProject.image;
+    const imageUrlField = formData.get('image_url');
     const image = formData.get('image');
-    
-    if (image && image.size > 0) {
+
+    if (imageUrlField !== null) {
+      // New flow: image was uploaded via /api/admin/upload, URL sent as text field
+      if (imageUrlField) {
+        imagePath = imageUrlField;
+        // Delete old image if it was replaced with a different file
+        if (currentProject.image && currentProject.image !== imageUrlField &&
+            currentProject.image.startsWith('/uploads/projects/')) {
+          const oldImagePath = path.join(process.cwd(), 'public', currentProject.image);
+          if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+        }
+      } else {
+        // image_url is empty string → image was cleared
+        imagePath = null;
+        if (currentProject.image && currentProject.image.startsWith('/uploads/projects/')) {
+          const oldImagePath = path.join(process.cwd(), 'public', currentProject.image);
+          if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+        }
+      }
+    } else if (image && image.size > 0) {
+      // Legacy file upload fallback
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
+
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'projects');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
-      
+
       const fileName = `${Date.now()}-${image.name.replace(/\s+/g, '-')}`;
       const filePath = path.join(uploadDir, fileName);
-      
+
       fs.writeFileSync(filePath, buffer);
       imagePath = `/uploads/projects/${fileName}`;
-      
+
       if (currentProject.image && currentProject.image.startsWith('/uploads/projects/')) {
         const oldImagePath = path.join(process.cwd(), 'public', currentProject.image);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
+        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
       }
     } else if (formData.get('image_cleared') === 'true') {
-      // Jika frontend memberi sinyal bahwa gambar dihapus
       imagePath = null;
       if (currentProject.image && currentProject.image.startsWith('/uploads/projects/')) {
         const oldImagePath = path.join(process.cwd(), 'public', currentProject.image);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
+        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
       }
     }
 

@@ -1,7 +1,6 @@
 // src/components/admin/SkillsSelector.jsx
 'use client';
 import { useState, useEffect, useCallback } from 'react'; // Tambahkan useCallback
-import Image from 'next/image'; // Tambahkan ini
 import { FiLoader, FiTag } from 'react-icons/fi';
 
 export default function SkillsSelector({ selectedSkills, onChange }) {
@@ -77,12 +76,12 @@ export default function SkillsSelector({ selectedSkills, onChange }) {
                 className="flex items-center gap-2 cursor-pointer py-1 text-zinc-200"
               >
                 {skill.imgSrc && (
-                  <Image // Ganti <img>
+                  <img
                     src={skill.imgSrc}
                     alt={skill.label}
-                    width={20} // w-5/h-5 setara 20px/20px
-                    height={20} // w-5/h-5 setara 20px/20px
-                    className="object-contain"
+                    width={20}
+                    height={20}
+                    className="object-contain w-5 h-5"
                   />
                 )}
                 <span>{skill.label}</span>

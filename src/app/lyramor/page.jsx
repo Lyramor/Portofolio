@@ -2,15 +2,17 @@
   // src/app/lyramor/page.js - Updated with new card order
   import { useState, useEffect } from 'react';
   import Link from 'next/link';
-  import { 
-    FiGrid, 
-    FiCode, 
-    FiUsers, 
-    FiEdit, 
-    FiInfo, 
+  import {
+    FiGrid,
+    FiCode,
+    FiUsers,
+    FiEdit,
+    FiInfo,
     FiBriefcase,
     FiBarChart2,
-    FiClock
+    FiClock,
+    FiMic,
+    FiAward
   } from 'react-icons/fi';
 
   export default function DashboardHome() {
@@ -19,6 +21,9 @@
       skills: 0,
       about: 0,
       experience: 0,
+      organizations: 0,
+      speaking: 0,
+      awards: 0,
       counterProjects: 0,
       counterExperience: 0,
       users: 0,
@@ -85,6 +90,27 @@
         link: '/lyramor/projects',
         color: 'bg-blue-500',
       },
+      {
+        title: 'Organizations',
+        value: stats.organizations,
+        icon: <FiUsers size={24} />,
+        link: '/lyramor/organizations',
+        color: 'bg-sky-500',
+      },
+      {
+        title: 'Speaking',
+        value: stats.speaking,
+        icon: <FiMic size={24} />,
+        link: '/lyramor/speaking',
+        color: 'bg-purple-500',
+      },
+      {
+        title: 'Awards',
+        value: stats.awards,
+        icon: <FiAward size={24} />,
+        link: '/lyramor/awards',
+        color: 'bg-amber-500',
+      },
     ];
 
     return (
@@ -98,7 +124,7 @@
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
               <div 
                 key={i}
                 className="bg-zinc-800 rounded-xl p-6 h-32 animate-pulse"
@@ -162,12 +188,33 @@
                 <FiBriefcase className="mr-3" />
                 Add New Experience
               </Link>
-              <Link 
-                href="/lyramor/projects/new" 
+              <Link
+                href="/lyramor/projects/new"
                 className="flex items-center w-full p-3 bg-zinc-700/50 hover:bg-zinc-700 rounded-lg transition-colors"
               >
                 <FiGrid className="mr-3" />
                 Add New Project
+              </Link>
+              <Link
+                href="/lyramor/organizations/new"
+                className="flex items-center w-full p-3 bg-zinc-700/50 hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                <FiUsers className="mr-3" />
+                Add Organization
+              </Link>
+              <Link
+                href="/lyramor/speaking/new"
+                className="flex items-center w-full p-3 bg-zinc-700/50 hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                <FiMic className="mr-3" />
+                Add Speaking Entry
+              </Link>
+              <Link
+                href="/lyramor/awards/new"
+                className="flex items-center w-full p-3 bg-zinc-700/50 hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                <FiAward className="mr-3" />
+                Add Award
               </Link>
             </div>
           </div>
