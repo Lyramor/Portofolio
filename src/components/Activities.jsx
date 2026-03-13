@@ -55,7 +55,7 @@ export default function Activities({ organizations = [], speaking = [] }) {
         <p className="text-zinc-400 text-center mb-10">Organization & Speaking Invitations</p>
 
         <div
-          className="relative"
+          className="relative max-w-4xl mx-auto"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
@@ -72,13 +72,13 @@ export default function Activities({ organizations = [], speaking = [] }) {
             >
               {/* Image */}
               {item.image_url && (
-                <div className="relative w-full">
+                <div className="relative w-full aspect-video overflow-hidden">
                   <img
                     src={item.image_url}
                     alt={item.type === 'organization' ? item.organization : item.event}
-                    className="w-full object-cover max-h-64"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-zinc-800 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-800 to-transparent" />
                 </div>
               )}
 

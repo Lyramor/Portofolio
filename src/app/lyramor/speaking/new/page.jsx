@@ -88,7 +88,7 @@ export default function NewSpeaking() {
 
         <div>
           <label className="block text-sm font-medium mb-2">Photo (optional)</label>
-          <ImageUploader value={formData.image_url} onChange={(url) => setFormData(prev => ({ ...prev, image_url: url }))} onUploading={setImageUploading} />
+          <ImageUploader value={formData.image_url} onChange={(url) => setFormData(prev => ({ ...prev, image_url: url }))} onUploading={setImageUploading} enableCrop />
         </div>
 
         <div>

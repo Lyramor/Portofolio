@@ -73,12 +73,13 @@ export default function Hero({ cvLink }) { // Menerima cvLink sebagai prop
 
               <div className="flex items-center gap-3">
                 {/* Render ButtonPrimary berdasarkan cvLink yang diterima */}
-                {cvLink ? ( // Tidak perlu loadingCv lagi
+                {cvLink ? (
                   <ButtonPrimary
                     label="Download CV"
                     icon={true}
-                    href={cvLink} // Gunakan CV link dari prop
-                    target="_blank" // Buka di tab baru
+                    href={cvLink}
+                    target="_blank"
+                    download={cvLink.startsWith('/uploads/cv/')}
                   />
                 ) : (
                   // Opsional render tombol yang dinonaktifkan atau tidak ada jika CV tidak tersedia

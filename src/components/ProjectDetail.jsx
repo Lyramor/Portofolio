@@ -38,11 +38,11 @@ export default function ProjectDetail({ project, onClose }) {
         style={{ animation: 'slideUpModal 0.3s ease' }}
       >
         {/* Image */}
-        <div className="relative w-full h-56 sm:h-64 flex-shrink-0 bg-zinc-800">
+        <div className="relative w-full flex-shrink-0 bg-zinc-800">
           <img
             src={project.image || '/images/default_project_image.png'}
             alt={project.title}
-            className="w-full h-full object-cover"
+            className="w-full h-auto object-contain"
           />
           {/* Close button */}
           <button
@@ -54,7 +54,7 @@ export default function ProjectDetail({ project, onClose }) {
         </div>
 
         {/* Content — scrollable */}
-        <div className="overflow-y-auto p-6 flex flex-col gap-5">
+        <div className="overflow-y-auto p-6 flex flex-col gap-5 custom-scroll">
           <h2 className="text-2xl font-bold text-zinc-50">{project.title}</h2>
 
           {/* Technologies */}
@@ -103,6 +103,19 @@ export default function ProjectDetail({ project, onClose }) {
         @keyframes slideUpModal {
           from { opacity: 0; transform: translateY(32px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        }
+        .custom-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+          background: #3f3f46;
+          border-radius: 999px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+          background: #38bdf8;
         }
       `}</style>
     </div>

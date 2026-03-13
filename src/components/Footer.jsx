@@ -59,8 +59,8 @@ export default function Footer() {
               <Image
                 src="/images/Logo.png" 
                 alt="Cylia Tech Logo" 
-                width={64}
-                height={48}
+                width={120}
+                height={90}
                 className="mb-4"
               />
               <p className="text-zinc-400 max-w-xs">

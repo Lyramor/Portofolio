@@ -15,13 +15,15 @@ const ButtonPrimary = ({
   target = '_self',
   label,
   icon,
-  classes = ''
+  classes = '',
+  download = false
 }) => {
   if (href){
     return (
-      <a 
+      <a
         href={href}
         target={target}
+        download={download || undefined}
         className={`btn btn-primary ${classes}`}
       >
         {label}
